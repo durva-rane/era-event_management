@@ -59,6 +59,16 @@ For Gmail, use an App Password rather than your normal Gmail password:
     SMTP_USER=your_email@gmail.com
     SMTP_PASSWORD=your_gmail_app_password
 
+For payment integration, local development uses the mock gateway by default. To use Razorpay test mode, configure:
+
+    PAYMENT_GATEWAY=razorpay
+    RAZORPAY_KEY_ID=rzp_test_...
+    RAZORPAY_KEY_SECRET=your_test_secret
+
+Optional finance settings are `PAYMENT_CURRENCY` (default `INR`) and `INVOICE_TAX_PERCENT` (default `0`). The app does not collect or store card details.
+
+For an existing database created from an earlier schema, apply migrations `001_vendor_booking_workflow.sql` through `004_delivery_workflow.sql` in numeric order. A fresh database gets the current tables and columns from `schema.sql`.
+
 ## 5. Run
 
     python app.py
@@ -80,6 +90,14 @@ Open:
 9. User enters the six-digit OTP.
 10. Server verifies OTP and expiry.
 11. Verified account is moved to the `users` table.
+
+## Attendees and notifications
+
+Organizers manage guests at `/events/<event_id>/attendees`; CSV imports require `name,email` columns and return created, duplicate, and row-error counts. Invitations include public tokenized `/rsvp/<token>` links. Registered attendees can see matching invitations at `/my/invitations`. A background worker checks every 15 minutes for events about 24 hours away; set `ENABLE_REMINDER_SCHEDULER=false` to disable it. Set `PUBLIC_BASE_URL` to the public origin used in email links. SMTP notifications are sent asynchronously; SMS currently uses a logging stub. Signed-in users can open the bell panel to read and mark notifications.
+
+## Delivery
+
+Organizers can create and track deliveries from `/deliveries`; delivery partners use `/delivery/tasks` to respond and advance each task through the allowed status sequence. Admins manage partner availability and activity from Admin → Delivery Partners. Partner suggestions conservatively reserve one active delivery per partner per calendar day because delivery tasks currently have a scheduled time but no duration. Task status and delay history appears in organizer tracking and is audit logged.
 
 ## Security notes
 

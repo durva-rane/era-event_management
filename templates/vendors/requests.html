@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Booking requests · ERA</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    body{max-width:1100px;margin:2rem auto;padding:0 1rem;font-family:system-ui,sans-serif;color:#172033}
+    .request{border:1px solid #d9dfeb;border-radius:12px;padding:1rem;margin:1rem 0;display:flex;gap:1rem;justify-content:space-between;align-items:center}
+    .actions{display:flex;gap:.6rem}button{padding:.6rem 1rem;border:0;border-radius:7px;cursor:pointer}.accept{background:#176b4d;color:white}.reject{background:#f0e7e5;color:#702d25}#notice{min-height:1.5rem}
+  </style>
+</head>
+<body>
+  <h1>Booking requests</h1>
+  <p id="notice" role="status"></p>
+  <section id="requests">
+    {% for item in requests %}
+      <article class="request" id="request-{{ item.id }}">
+        <div><h2>{{ item.event_name }}</h2><p>{{ item.service_name }} · {{ item.booking_date }} · {{ item.start_time }}–{{ item.end_time }}</p><p>{{ item.category }} · {{ item.expected_attendees }} attendees · Requested by {{ item.requester_name }}</p></div>
+        <div class="actions"><button class="accept" data-id="{{ item.id }}" data-decision="accepted">Accept</button><button class="reject" data-id="{{ item.id }}" data-decision="rejected">Reject</button></div>
+      </article>
+    {% else %}<p>No pending booking requests.</p>{% endfor %}
+  </section>
+  <script>
+    document.querySelectorAll("[data-decision]").forEach(button => button.addEventListener("click", async () => {
+      button.disabled = true;
+      const notice = document.getElementById("notice");
+      try {
+        const response = await fetch(`/api/vendor-bookings/${button.dataset.id}/respond`, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({decision:button.dataset.decision})});
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || "Could not update request.");
+        document.getElementById(`request-${button.dataset.id}`).remove();
+        notice.textContent = `Request ${result.status}.`;
+      } catch(error) { notice.textContent = error.message; button.disabled = false; }
+    }));
+  </script>
+{% include 'partials/notification_bell.html' %}</body>
+</html>

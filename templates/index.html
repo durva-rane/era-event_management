@@ -396,6 +396,7 @@
                 <h1 class="page-title">Event Management & Tracking</h1>
                 <p class="page-subtitle">Schedule activities, monitor event timelines, and download summaries</p>
               </div>
+              {% if current_user_role in ('organizer', 'admin') %}<a class="btn btn-secondary" href="/deliveries">Manage deliveries</a>{% endif %}
               <button class="btn btn-primary" onclick="openCreateEventModal()">+ New Event</button>
             </div>
             <div class="glass-card">
@@ -488,6 +489,7 @@
                 <p class="page-subtitle">Track equipment dispatches and update delivery status</p>
               </div>
             </div>
+            <p><a class="btn btn-secondary" href="/delivery/tasks">Open live delivery task dashboard</a></p>
             <div class="glass-card">
               <div class="table-responsive">
                 <table class="data-table">
@@ -659,5 +661,6 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% include 'partials/notification_bell.html' %}
 </body>
 </html>

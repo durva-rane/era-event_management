@@ -61,6 +61,11 @@
                                 {% else %}
                                     <button class="btn btn-secondary btn-sm" style="color:var(--color-success);" onclick="toggleDeactivate({{ item.id }}, 'active')">Activate</button>
                                 {% endif %}
+                                {% if role == 'delivery_partner' %}
+                                    <label>Availability <select id="availability-{{ item.id }}"><option value="available" {{ 'selected' if item.details == 'available' }}>Available</option><option value="busy" {{ 'selected' if item.details == 'busy' }}>Busy</option><option value="offline" {{ 'selected' if item.details == 'offline' }}>Offline</option></select></label>
+                                    <label>Partner status <select id="partner-status-{{ item.id }}"><option value="active" {{ 'selected' if item.partner_status == 'active' }}>Active</option><option value="inactive" {{ 'selected' if item.partner_status == 'inactive' }}>Inactive</option><option value="on_delivery" {{ 'selected' if item.partner_status == 'on_delivery' }}>On delivery</option></select></label>
+                                    <button class="btn btn-primary btn-sm" onclick="saveDeliveryPartner({{ item.id }})">Save partner</button>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -80,6 +85,12 @@
 function toggleDeactivate(userId, status) {
     if (!confirm(`Are you sure you want to mark user #${userId} as ${status}?`)) return;
     performAdminAction(`/api/admin/users/${userId}/status`, { status });
+}
+async function saveDeliveryPartner(id) {
+    const response = await fetch(`/api/admin/delivery-partners/${id}`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({availability:document.getElementById(`availability-${id}`).value,status:document.getElementById(`partner-status-${id}`).value})});
+    const result = await response.json();
+    if (!response.ok) { alert(result.message || 'Could not update partner.'); return; }
+    alert(result.message); location.reload();
 }
 </script>
 {% endblock %}

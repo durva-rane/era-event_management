@@ -21,18 +21,13 @@ def register_listener(event_name: str, handler: Callable):
 
 
 def send_notification(user_id: int, message: str) -> None:
-    """Inserts an in-app notification for the user."""
-    if not user_id or not message:
-        return
+    """Compatibility wrapper that routes existing modules through the shared service."""
+    if not user_id or not message: return
     try:
-        from core.db import get_db_cursor
-        with get_db_cursor(commit_on_success=True) as (cursor, _):
-            cursor.execute(
-                "INSERT INTO notifications (user_id, message, status) VALUES (%s, %s, 'unread')",
-                (user_id, message.strip()),
-            )
+        from core.notification_service import notify
+        notify(user_id,message,event_type="system")
     except Exception as exc:
-        logger.warning(f"Could not persist notification for user_id={user_id}: {exc}")
+        logger.warning("Could not persist notification for user_id=%s: %s",user_id,exc)
 
 
 def emit_event(event_name: str, **kwargs):

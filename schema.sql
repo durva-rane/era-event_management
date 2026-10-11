@@ -16,7 +16,9 @@ DROP TABLE IF EXISTS audit_logs;
 DROP TABLE IF EXISTS chat_messages;
 DROP TABLE IF EXISTS reviews;
 DROP TABLE IF EXISTS delivery_tasks;
+DROP TABLE IF EXISTS delivery_task_updates;
 DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS event_reminders;
 DROP TABLE IF EXISTS attendees;
 DROP TABLE IF EXISTS invoices;
 DROP TABLE IF EXISTS payments;
@@ -261,17 +263,24 @@ CREATE TABLE bookings (
     booking_date DATE NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
+    quantity INT UNSIGNED NOT NULL DEFAULT 1,
+    budget_category VARCHAR(100) NULL,
     amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
-    status ENUM('pending', 'requested', 'confirmed', 'rejected', 'cancelled') NOT NULL DEFAULT 'pending',
-    payment_status ENUM('payment_pending', 'partially_paid', 'paid') NOT NULL DEFAULT 'payment_pending',
+    status ENUM('pending', 'requested', 'confirmed', 'rejected', 'cancelled', 'completed') NOT NULL DEFAULT 'pending',
+    payment_status ENUM('payment_pending', 'partially_paid', 'paid', 'refunded') NOT NULL DEFAULT 'payment_pending',
     commission_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    cancelled_by BIGINT UNSIGNED NULL,
+    cancellation_reason TEXT NULL,
+    cancelled_at DATETIME NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_bookings_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
     CONSTRAINT fk_bookings_venue FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE SET NULL,
     CONSTRAINT fk_bookings_vendor FOREIGN KEY (vendor_id) REFERENCES users(id) ON DELETE SET NULL,
     CONSTRAINT fk_bookings_service FOREIGN KEY (service_id) REFERENCES vendor_services(id) ON DELETE SET NULL,
+    CONSTRAINT fk_bookings_cancelled_by FOREIGN KEY (cancelled_by) REFERENCES users(id) ON DELETE SET NULL,
     -- REQUIRED INDEX for conflict detection & venue double-booking prevention:
     INDEX idx_bookings_venue_conflict (venue_id, booking_date, start_time, end_time),
+    INDEX idx_bookings_vendor_conflict (vendor_id, booking_date, start_time, end_time, status),
     INDEX idx_bookings_event (event_id),
     INDEX idx_bookings_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -283,6 +292,8 @@ CREATE TABLE budgets (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     event_id BIGINT UNSIGNED NOT NULL UNIQUE,
     total_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    alert_80_sent BOOLEAN NOT NULL DEFAULT FALSE,
+    alert_exceeded_sent BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_budgets_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -292,6 +303,7 @@ CREATE TABLE budget_items (
     budget_id BIGINT UNSIGNED NOT NULL,
     category VARCHAR(100) NOT NULL,
     allocated_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    estimated_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     spent_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_budget_items_budget FOREIGN KEY (budget_id) REFERENCES budgets(id) ON DELETE CASCADE,
@@ -305,12 +317,19 @@ CREATE TABLE payments (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     booking_id BIGINT UNSIGNED NOT NULL,
     amount DECIMAL(12, 2) NOT NULL,
-    method ENUM('upi', 'net_banking', 'card', 'cash', 'bank_transfer') NOT NULL,
+    method ENUM('upi', 'net_banking', 'card', 'cash', 'bank_transfer', 'razorpay', 'mock') NOT NULL,
     status ENUM('pending', 'success', 'failed', 'refunded') NOT NULL DEFAULT 'pending',
-    transaction_id VARCHAR(100) NOT NULL UNIQUE,
+    transaction_id VARCHAR(100) NULL UNIQUE,
+    gateway_order_id VARCHAR(100) NULL,
+    record_type ENUM('charge', 'refund') NOT NULL DEFAULT 'charge',
+    parent_payment_id BIGINT UNSIGNED NULL,
+    initiated_by BIGINT UNSIGNED NULL,
+    expires_at DATETIME NULL,
     paid_at TIMESTAMP NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_payments_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    CONSTRAINT fk_payments_parent FOREIGN KEY (parent_payment_id) REFERENCES payments(id) ON DELETE SET NULL,
+    CONSTRAINT fk_payments_initiated_by FOREIGN KEY (initiated_by) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_payments_booking (booking_id),
     INDEX idx_payments_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -319,10 +338,19 @@ CREATE TABLE invoices (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     booking_id BIGINT UNSIGNED NOT NULL,
     invoice_no VARCHAR(100) NOT NULL UNIQUE,
+    event_name VARCHAR(200) NOT NULL,
+    client_id BIGINT UNSIGNED NOT NULL,
+    vendor_id BIGINT UNSIGNED NULL,
+    description TEXT NULL,
+    quantity INT UNSIGNED NOT NULL DEFAULT 1,
+    amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     tax DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     total DECIMAL(12, 2) NOT NULL,
+    payment_status ENUM('payment_pending', 'partially_paid', 'paid', 'refunded') NOT NULL DEFAULT 'payment_pending',
     issued_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_invoices_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    CONSTRAINT fk_invoices_client FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_invoices_vendor FOREIGN KEY (vendor_id) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_invoices_booking (booking_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -335,6 +363,7 @@ CREATE TABLE attendees (
     name VARCHAR(120) NOT NULL,
     email VARCHAR(255) NOT NULL,
     phone VARCHAR(20) NULL,
+    rsvp_token VARCHAR(64) NULL UNIQUE,
     invitation_status ENUM('invited', 'registered', 'declined') NOT NULL DEFAULT 'invited',
     rsvp_status ENUM('pending', 'accepted', 'declined', 'maybe') NOT NULL DEFAULT 'pending',
     checked_in_at TIMESTAMP NULL,
@@ -346,6 +375,16 @@ CREATE TABLE attendees (
     INDEX idx_attendees_rsvp (event_id, rsvp_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE event_reminders (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    event_id BIGINT UNSIGNED NOT NULL,
+    attendee_id BIGINT UNSIGNED NOT NULL,
+    sent_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_reminder_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+    CONSTRAINT fk_reminder_attendee FOREIGN KEY (attendee_id) REFERENCES attendees(id) ON DELETE CASCADE,
+    UNIQUE KEY uq_event_attendee_reminder (event_id,attendee_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ==============================================================================
 -- 12. NOTIFICATIONS
 -- ==============================================================================
@@ -353,6 +392,8 @@ CREATE TABLE notifications (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL,
     message TEXT NOT NULL,
+    event_type VARCHAR(60) NOT NULL DEFAULT 'general',
+    link VARCHAR(500) NULL,
     status ENUM('unread', 'read') NOT NULL DEFAULT 'unread',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -375,6 +416,7 @@ CREATE TABLE delivery_tasks (
     status ENUM(
         'assigned',
         'accepted',
+        'rejected',
         'pickup_pending',
         'picked_up',
         'in_transit',
@@ -388,6 +430,20 @@ CREATE TABLE delivery_tasks (
     INDEX idx_delivery_event (event_id),
     INDEX idx_delivery_partner (partner_id),
     INDEX idx_delivery_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE delivery_task_updates (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    task_id BIGINT UNSIGNED NOT NULL,
+    update_type ENUM('assigned','status','delayed') NOT NULL,
+    from_status VARCHAR(30) NULL,
+    to_status VARCHAR(30) NULL,
+    note TEXT NULL,
+    actor_id BIGINT UNSIGNED NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_delivery_update_task FOREIGN KEY (task_id) REFERENCES delivery_tasks(id) ON DELETE CASCADE,
+    CONSTRAINT fk_delivery_update_actor FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_delivery_update_timeline (task_id,created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ==============================================================================

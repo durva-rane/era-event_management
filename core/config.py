@@ -28,6 +28,12 @@ class Config:
     DB_USER = os.getenv("DB_USER", "era_user")
     DB_PASSWORD = os.getenv("DB_PASSWORD", "SEPro@22")
     DB_NAME = os.getenv("DB_NAME", "era_db")
+    ERA_COMMISSION_PERCENT = float(os.getenv("ERA_COMMISSION_PERCENT", "5"))
+    PAYMENT_GATEWAY = os.getenv("PAYMENT_GATEWAY", "mock").lower()
+    RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
+    RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
+    PAYMENT_CURRENCY = os.getenv("PAYMENT_CURRENCY", "INR")
+    INVOICE_TAX_PERCENT = float(os.getenv("INVOICE_TAX_PERCENT", "0"))
 
     # SMTP Configuration
     SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
@@ -35,6 +41,8 @@ class Config:
     SMTP_USER = os.getenv("SMTP_USER", "")
     SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
     SMTP_FROM = os.getenv("SMTP_FROM", os.getenv("SMTP_USER", "noreply@era.com"))
+    PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://127.0.0.1:5000")
+    ENABLE_REMINDER_SCHEDULER = os.getenv("ENABLE_REMINDER_SCHEDULER", "true").lower() == "true"
 
     # File Uploads
     UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
