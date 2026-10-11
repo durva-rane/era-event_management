@@ -1,0 +1,99 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}ERA Admin | Bookings Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Bookings Oversight & Status Console</h1>
+        <p class="page-subtitle">Track venue and vendor reservation timelines, amounts (₹), payment status, and override decisions</p>
+    </div>
+</div>
+
+<div class="glass-card">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Booking ID</th>
+                    <th>Event</th>
+                    <th>Type</th>
+                    <th>Resource Target</th>
+                    <th>Date & Schedule</th>
+                    <th>Amount (₹)</th>
+                    <th>Payment</th>
+                    <th>Booking Status</th>
+                    <th>Admin Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in bookings %}
+                    <tr>
+                        <td><strong>#BK-{{ b.id }}</strong></td>
+                        <td>
+                            <div style="font-weight:700;">{{ b.event_name }}</div>
+                            <div style="font-size:0.75rem; color:var(--text-dim);">Event #{{ b.event_id }}</div>
+                        </td>
+                        <td>
+                            <span class="badge badge-info">{{ b.booking_type | upper }}</span>
+                        </td>
+                        <td>
+                            {% if b.booking_type == 'venue' %}
+                                🏛️ {{ b.venue_name }}
+                            {% elif b.booking_type == 'vendor' %}
+                                🛠️ {{ b.vendor_name }}
+                            {% else %}
+                                🚚 Delivery Dispatch
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>{{ b.booking_date }}</div>
+                            <div style="font-size:0.75rem; color:var(--text-dim);">{{ b.start_time }} - {{ b.end_time }}</div>
+                        </td>
+                        <td>
+                            <strong>₹{{ "{:,.2f}".format(b.amount) }}</strong>
+                            {% if b.commission_amount %}
+                                <div style="font-size:0.75rem; color:var(--color-success);">Comm: ₹{{ "{:,.2f}".format(b.commission_amount) }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {{ 'badge-success' if b.payment_status == 'paid' else 'badge-warning' }}">
+                                {{ b.payment_status | replace('_', ' ') | title }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {{ 'badge-success' if b.status == 'confirmed' else 'badge-warning' if b.status in ['pending', 'requested'] else 'badge-danger' }}">
+                                {{ b.status | upper }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-btn-group">
+                                {% if b.status != 'confirmed' %}
+                                    <button class="btn btn-secondary btn-sm" style="color:var(--color-success);" onclick="updateBookingStatus({{ b.id }}, 'confirmed')">Confirm</button>
+                                {% endif %}
+                                {% if b.status != 'rejected' %}
+                                    <button class="btn btn-secondary btn-sm" style="color:var(--color-danger);" onclick="updateBookingStatus({{ b.id }}, 'rejected')">Reject</button>
+                                {% endif %}
+                                {% if b.status != 'cancelled' %}
+                                    <button class="btn btn-secondary btn-sm" style="color:var(--color-warning);" onclick="updateBookingStatus({{ b.id }}, 'cancelled')">Cancel</button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="9" style="text-align:center; padding:2rem; color:var(--text-muted);">No bookings recorded in system.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function updateBookingStatus(bookingId, status) {
+    if (!confirm(`Update booking #${bookingId} status to '${status}'?`)) return;
+    performAdminAction(`/api/admin/bookings/${bookingId}/status`, { status });
+}
+</script>
+{% endblock %}

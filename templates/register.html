@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERA | Stakeholder Registration</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="page-shell">
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-mark">ERA</div>
+            <div>
+                <h1>ERA</h1>
+                <span>Event Resource & Administration</span>
+            </div>
+        </div>
+        <div class="secure-badge" style="display:flex; align-items:center; gap:1rem;">
+            <a href="{{ url_for('dashboard') }}" style="color:#818cf8; text-decoration:none; font-weight:600;">← Go to Dashboard</a>
+            <span>🔒 Secure Registration</span>
+        </div>
+    </header>
+
+    <main class="registration-layout">
+        <aside class="sidebar">
+            <div class="sidebar-heading">
+                <span>Register as</span>
+                <h2>Choose Stakeholder</h2>
+            </div>
+
+            <nav class="role-nav" aria-label="Stakeholder registration">
+                <button class="role-tab active" data-role="client">👤 <span>Client</span></button>
+                <button class="role-tab" data-role="organizer">📋 <span>Event Organizer</span></button>
+                <button class="role-tab" data-role="venue_owner">🏛️ <span>Venue Owner</span></button>
+                <button class="role-tab" data-role="vendor">🧰 <span>Vendor</span></button>
+                <button class="role-tab" data-role="attendee">🎟️ <span>Attendee</span></button>
+                <button class="role-tab" data-role="delivery_partner">🚚 <span>Delivery Partner</span></button>
+            </nav>
+
+            <div class="sidebar-note">
+                <strong>One ERA account</strong>
+                <p>Your selected stakeholder role determines the features and dashboard you will access after authentication.</p>
+            </div>
+        </aside>
+
+        <section class="form-card">
+            <div class="form-header">
+                <p class="eyebrow">CREATE ACCOUNT</p>
+                <h2 id="formTitle">Client Registration</h2>
+                <p id="formSubtitle">Create your ERA account to plan and manage events.</p>
+            </div>
+
+            <div id="alert" class="alert hidden"></div>
+
+            <form id="registrationForm" novalidate>
+                <input type="hidden" id="role" name="role" value="client">
+
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="name">Full Name <span>*</span></label>
+                        <input id="name" name="name" type="text" autocomplete="name" placeholder="Enter full name">
+                        <small class="error" id="nameError"></small>
+                    </div>
+
+                    <div class="field business-field hidden">
+                        <label for="organization">Business / Organization Name <span>*</span></label>
+                        <input id="organization" name="organization" type="text" placeholder="Enter registered business name">
+                        <small class="error" id="organizationError"></small>
+                    </div>
+
+                    <!-- Role-Specific Extra Fields -->
+                    <div class="field organizer-field hidden">
+                        <label for="specialization">Event Specialization</label>
+                        <input id="specialization" name="specialization" type="text" placeholder="e.g. Corporate Summits, Weddings">
+                    </div>
+
+                    <div class="field venue-field hidden">
+                        <label for="license_number">Venue License / Registration Number <span>*</span></label>
+                        <input id="license_number" name="license_number" type="text" placeholder="e.g. MUM-LIC-VN-2026-901">
+                        <small class="error" id="licenseError"></small>
+                    </div>
+
+                    <div class="field venue-field hidden">
+                        <label for="ownership_type">Ownership Structure</label>
+                        <select id="ownership_type" name="ownership_type" class="custom-select" style="width:100%; height:47px; border:1px solid var(--border); border-radius:11px; padding:0 13px; background:white; outline:none;">
+                            <option value="individual">Individual / Proprietor</option>
+                            <option value="corporate">Corporate / Hospitality Group</option>
+                            <option value="partnership">Partnership Firm</option>
+                            <option value="lease">Commercial Lease</option>
+                        </select>
+                    </div>
+
+                    <div class="field vendor-field hidden">
+                        <label for="service_type">Service Category <span>*</span></label>
+                        <select id="service_type" name="service_type" class="custom-select" style="width:100%; height:47px; border:1px solid var(--border); border-radius:11px; padding:0 13px; background:white; outline:none;">
+                            <option value="Catering">Catering & Beverages</option>
+                            <option value="Sound & Stage">Sound, Stage & Lighting</option>
+                            <option value="Decoration">Floral & Theme Decoration</option>
+                            <option value="Photography">Photography & Videography</option>
+                            <option value="Security">Event Security & Bouncers</option>
+                            <option value="Other">Other Event Services</option>
+                        </select>
+                    </div>
+
+                    <div class="field vendor-field hidden">
+                        <label for="pricing">Starting Rate / Base Package (₹)</label>
+                        <input id="pricing" name="pricing" type="number" min="0" placeholder="e.g. 15000">
+                    </div>
+
+                    <div class="field client-field">
+                        <label for="event_requirements">Event Requirements & Notes</label>
+                        <input id="event_requirements" name="event_requirements" type="text" placeholder="e.g. Corporate tech conferences, 500+ guests">
+                    </div>
+
+                    <!-- Verification Document Upload for Business Stakeholders -->
+                    <div class="field doc-field hidden" style="grid-column: 1 / -1;">
+                        <label for="verification_doc">Business Verification Document (GST / Trade License / FSSAI / Deed) <span>*</span></label>
+                        <input id="verification_doc" name="verification_doc" type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" style="padding-top:10px;">
+                        <small style="color:var(--muted); font-size:11px; display:block; margin-top:4px;">Upload registration certificate, municipal clearance, or business proof (PDF or Image, max 16MB). Required for administrator verification.</small>
+                    </div>
+
+                    <div class="field">
+                        <label for="email">Email Address <span>*</span></label>
+                        <input id="email" name="email" type="email" autocomplete="email" placeholder="example@email.com">
+                        <small class="error" id="emailError"></small>
+                    </div>
+
+                    <div class="field">
+                        <label for="phone">Mobile Number <span>*</span></label>
+                        <div class="phone-wrap">
+                            <span>+91</span>
+                            <input id="phone" name="phone" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel" placeholder="10-digit mobile number">
+                        </div>
+                        <small class="error" id="phoneError"></small>
+                    </div>
+
+                    <div class="field">
+                        <label for="city">City</label>
+                        <input id="city" name="city" type="text" autocomplete="address-level2" placeholder="Mumbai">
+                    </div>
+
+                    <div class="field">
+                        <label for="password">Password <span>*</span></label>
+                        <div class="password-wrap">
+                            <input id="password" name="password" type="password" autocomplete="new-password" placeholder="Create a strong password">
+                            <button type="button" class="toggle-password" data-target="password">Show</button>
+                        </div>
+                        <div class="password-rules">
+                            <span data-rule="length">8+ characters</span>
+                            <span data-rule="upper">Uppercase</span>
+                            <span data-rule="lower">Lowercase</span>
+                            <span data-rule="number">Number</span>
+                            <span data-rule="special">Special character</span>
+                        </div>
+                        <small class="error" id="passwordError"></small>
+                    </div>
+
+                    <div class="field">
+                        <label for="confirm_password">Confirm Password <span>*</span></label>
+                        <div class="password-wrap">
+                            <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" placeholder="Re-enter password">
+                            <button type="button" class="toggle-password" data-target="confirm_password">Show</button>
+                        </div>
+                        <small class="error" id="confirmPasswordError"></small>
+                    </div>
+                </div>
+
+                <label class="terms">
+                    <input type="checkbox" id="terms" name="terms">
+                    <span>I agree to the ERA terms, privacy requirements and secure-use policy.</span>
+                </label>
+                <small class="error" id="termsError"></small>
+
+                <button class="primary-btn" id="registerBtn" type="submit">
+                    Send Verification OTP →
+                </button>
+            </form>
+
+            <section id="otpSection" class="otp-section hidden">
+                <div class="otp-icon">✉</div>
+                <h3>Verify your email</h3>
+                <p>We sent a 6-digit OTP to <strong id="otpEmail"></strong>.</p>
+                <div class="otp-inputs">
+                    <input maxlength="1" inputmode="numeric">
+                    <input maxlength="1" inputmode="numeric">
+                    <input maxlength="1" inputmode="numeric">
+                    <input maxlength="1" inputmode="numeric">
+                    <input maxlength="1" inputmode="numeric">
+                    <input maxlength="1" inputmode="numeric">
+                </div>
+                <p class="otp-timer" id="otpTimer">OTP expires in 10:00</p>
+                <button class="primary-btn" id="verifyBtn" type="button">Verify Email & Complete Registration</button>
+                <button class="text-btn" id="resendBtn" type="button" disabled>Resend OTP</button>
+            </section>
+
+            <div id="successBox" class="success-box hidden">
+                <div class="success-icon">✓</div>
+                <h3>Registration Complete</h3>
+                <p id="successMessage"></p>
+                <button type="button" class="secondary-btn" id="newRegistrationBtn">Register Another Stakeholder</button>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script src="{{ url_for('static', filename='js/register.js') }}"></script>
+</body>
+</html>

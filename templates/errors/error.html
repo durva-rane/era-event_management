@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERA | {{ code }} Error</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+</head>
+<body>
+<div class="page-view" style="min-height:100vh; display:flex; flex-direction:column;">
+    <header class="landing-nav">
+        <div class="brand-wrap" style="cursor:pointer;" onclick="window.location.href='/'">
+            <div class="brand-logo">ERA</div>
+            <div>
+                <div class="brand-text-title">ERA Platform</div>
+            </div>
+        </div>
+        <nav class="top-right-menu">
+            <a class="nav-item-link" href="/">Home</a>
+            <a class="nav-item-link" href="{{ url_for('auth.login_page') }}">Login</a>
+        </nav>
+    </header>
+
+    <main style="flex:1; display:flex; align-items:center; justify-content:center; padding:2rem;">
+        <div class="glass-card" style="max-width: 500px; text-align:center; padding:3rem 2rem;">
+            <div style="font-family:var(--font-display); font-size:4rem; font-weight:800; color:var(--color-primary-light); line-height:1;">
+                {{ code }}
+            </div>
+            <h2 style="font-size:1.5rem; font-weight:700; margin: 1rem 0 0.5rem;">{{ message }}</h2>
+            <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:2rem;">
+                {% if code == 403 %}
+                    You do not have administrative or stakeholder authorization to access this resource.
+                {% elif code == 404 %}
+                    The requested page or endpoint could not be found on the ERA server.
+                {% else %}
+                    Something went wrong while processing your request. Please try again.
+                {% endif %}
+            </p>
+            <div style="display:flex; justify-content:center; gap:1rem;">
+                <a href="/" class="btn btn-secondary">Go to Home</a>
+                <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

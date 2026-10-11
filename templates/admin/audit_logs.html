@@ -1,0 +1,88 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}ERA Admin | Audit Log Viewer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">System Audit Log Viewer</h1>
+        <p class="page-subtitle">Immutable compliance trails: Filter by actor user, system action, date, and execution outcomes</p>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<form method="GET" action="{{ url_for('admin.audit_logs_view') }}" class="filter-bar">
+    <div style="flex:1; min-width:160px;">
+        <input type="number" name="user_id" class="form-control" placeholder="Filter by User ID (e.g. 1)" value="{{ current_user_id }}">
+    </div>
+    <div style="flex:1; min-width:180px;">
+        <input type="text" name="action" class="form-control" placeholder="Action (e.g. LOGIN, VERIFY_APPROVE)" value="{{ current_action }}">
+    </div>
+    <div style="flex:1; min-width:160px;">
+        <input type="date" name="date" class="form-control" value="{{ current_date }}">
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+    <a href="{{ url_for('admin.audit_logs_view') }}" class="btn btn-secondary btn-sm">Clear</a>
+</form>
+
+<div class="glass-card">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Log ID</th>
+                    <th>Timestamp</th>
+                    <th>Action</th>
+                    <th>Entity & Target</th>
+                    <th>Actor User</th>
+                    <th>Role</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                    <tr>
+                        <td><strong>#LOG-{{ log.id }}</strong></td>
+                        <td style="font-size:0.8rem; color:var(--text-dim); min-width:160px;">{{ log.created_at }}</td>
+                        <td>
+                            <strong style="color:var(--color-primary-light);">{{ log.action }}</strong>
+                        </td>
+                        <td>
+                            <div>{{ log.entity }}</div>
+                            {% if log.entity_id %}
+                                <div style="font-size:0.75rem; color:var(--text-dim);">Ref ID: #{{ log.entity_id }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if log.user_id %}
+                                <div style="font-weight:600;">{{ log.user_name or 'Unknown User' }}</div>
+                                <div style="font-size:0.75rem; color:var(--text-dim);">{{ log.user_email }} (#{{ log.user_id }})</div>
+                            {% else %}
+                                <span style="color:var(--text-dim);">System / Guest</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if log.user_role %}
+                                <span class="badge badge-info">{{ log.user_role | upper }}</span>
+                            {% else %}
+                                <span style="color:var(--text-dim);">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {{ 'badge-success' if log.result == 'success' else 'badge-danger' }}">
+                                {{ log.result | upper }}
+                            </span>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align:center; padding:3rem; color:var(--text-muted);">
+                            No audit log records matching the specified criteria.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

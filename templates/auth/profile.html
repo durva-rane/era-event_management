@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERA | User Profile & Settings</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+</head>
+<body>
+<div class="page-view">
+    <!-- Top Header -->
+    <header class="top-header">
+        <div class="brand-wrap" style="cursor:pointer;" onclick="window.location.href='/dashboard'">
+            <div class="brand-logo">ERA</div>
+            <div>
+                <div class="brand-text-title">ERA Platform</div>
+                <div style="font-size:0.65rem; color:var(--color-primary-light); text-transform:uppercase;">Profile Management</div>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <a href="/dashboard" class="btn btn-secondary btn-sm">← Back to Dashboard</a>
+            <a href="{{ url_for('auth.logout_action') }}" class="btn btn-secondary btn-sm">Sign Out</a>
+        </div>
+    </header>
+
+    <main class="content-body" style="max-width: 960px; margin: 2rem auto;">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">My Account Profile</h1>
+                <p class="page-subtitle">Manage your personal credentials, contact info, and stakeholder profile</p>
+            </div>
+            <div>
+                <span class="badge {{ 'badge-success' if user.status == 'active' else 'badge-warning' if user.status == 'pending' else 'badge-danger' }}" style="padding:0.4rem 0.8rem; font-size:0.85rem;">
+                    Status: {{ user.status | upper }}
+                </span>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="badge badge-{{ 'danger' if category in ['danger', 'error'] else 'success' if category == 'success' else 'warning' }}" 
+                         style="display:flex; padding:0.85rem 1.25rem; border-radius:var(--radius-md); margin-bottom:1.5rem; font-size:0.9rem; width:100%;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div style="display:grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
+            <!-- Left Info Card -->
+            <div class="glass-card" style="height: fit-content; text-align:center;">
+                <div class="user-avatar" style="width:80px; height:80px; font-size:2rem; margin:0 auto 1.25rem;">
+                    {{ user.name[:2] | upper }}
+                </div>
+                <h2 style="font-size:1.35rem; font-weight:700;">{{ user.name }}</h2>
+                <div style="margin-top:0.4rem;">
+                    <span class="badge badge-info">{{ user.role_display }}</span>
+                </div>
+                <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.75rem;">{{ user.email }}</p>
+                <p style="font-size:0.85rem; color:var(--text-muted);">+91 {{ user.phone }}</p>
+
+                <div style="margin-top:1.5rem; padding-top:1.25rem; border-top:1px solid var(--border-color); text-align:left; font-size:0.82rem; color:var(--text-dim);">
+                    <div>Member Since: <strong>{{ user.created_at }}</strong></div>
+                    <div style="margin-top:0.4rem;">Account ID: <strong>#USR-{{ user.id }}</strong></div>
+                </div>
+            </div>
+
+            <!-- Right Edit Card -->
+            <div class="glass-card">
+                <h3 style="font-size:1.2rem; font-weight:700; margin-bottom:1.5rem;">Edit Profile Details</h3>
+
+                <form method="POST" action="{{ url_for('auth.profile_api') }}">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="name">Full Name / Representative *</label>
+                            <input type="text" id="name" name="name" class="form-control" value="{{ user.name }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="phone">Mobile Phone (+91) *</label>
+                            <input type="text" id="phone" name="phone" class="form-control" value="{{ user.phone }}" required maxlength="10">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email Address (Read Only)</label>
+                        <input type="email" class="form-control" value="{{ user.email }}" disabled style="opacity:0.65;">
+                    </div>
+
+                    <!-- Role-Specific Profile Details -->
+                    {% if user.role == 'organizer' %}
+                        <div style="margin-top:1.5rem; padding-top:1.5rem; border-top:1px solid var(--border-color);">
+                            <h4 style="font-size:1rem; font-weight:700; margin-bottom:1rem; color:var(--color-primary-light);">Organizer Business Profile</h4>
+                            <div class="form-group">
+                                <label class="form-label" for="organization_name">Organization / Agency Name</label>
+                                <input type="text" id="organization_name" name="organization_name" class="form-control" value="{{ profile.organization_name if profile else '' }}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="specialization">Specialization</label>
+                                <input type="text" id="specialization" name="specialization" class="form-control" value="{{ profile.specialization if profile else '' }}" placeholder="e.g. Corporate, Conferences">
+                            </div>
+                        </div>
+                    {% elif user.role == 'venue_owner' %}
+                        <div style="margin-top:1.5rem; padding-top:1.5rem; border-top:1px solid var(--border-color);">
+                            <h4 style="font-size:1rem; font-weight:700; margin-bottom:1rem; color:var(--color-primary-light);">Venue Entity Profile</h4>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label" for="business_name">Business / Hospitality Name</label>
+                                    <input type="text" id="business_name" name="business_name" class="form-control" value="{{ profile.business_name if profile else '' }}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="license_number">Trade / Fire Safety License</label>
+                                    <input type="text" id="license_number" name="license_number" class="form-control" value="{{ profile.license_number if profile else '' }}">
+                                </div>
+                            </div>
+                        </div>
+                    {% elif user.role == 'vendor' %}
+                        <div style="margin-top:1.5rem; padding-top:1.5rem; border-top:1px solid var(--border-color);">
+                            <h4 style="font-size:1rem; font-weight:700; margin-bottom:1rem; color:var(--color-primary-light);">Vendor Service Profile</h4>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label" for="business_name">Vendor Business Name</label>
+                                    <input type="text" id="business_name" name="business_name" class="form-control" value="{{ profile.business_name if profile else '' }}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="service_type">Service Category</label>
+                                    <input type="text" id="service_type" name="service_type" class="form-control" value="{{ profile.service_type if profile else '' }}">
+                                </div>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label" for="pricing">Starting Rate / Base Package (₹)</label>
+                                    <input type="number" id="pricing" name="pricing" class="form-control" value="{{ profile.pricing if profile else '0' }}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="location">Service Location / City</label>
+                                    <input type="text" id="location" name="location" class="form-control" value="{{ profile.location if profile else '' }}">
+                                </div>
+                            </div>
+                        </div>
+                    {% elif user.role == 'client' %}
+                        <div style="margin-top:1.5rem; padding-top:1.5rem; border-top:1px solid var(--border-color);">
+                            <h4 style="font-size:1rem; font-weight:700; margin-bottom:1rem; color:var(--color-primary-light);">Event Planning Preferences</h4>
+                            <div class="form-group">
+                                <label class="form-label" for="event_requirements">Event Requirements & Notes</label>
+                                <textarea id="event_requirements" name="event_requirements" rows="3" class="form-control">{{ profile.event_requirements if profile else '' }}</textarea>
+                            </div>
+                        </div>
+                    {% elif user.role == 'delivery_partner' %}
+                        <div style="margin-top:1.5rem; padding-top:1.5rem; border-top:1px solid var(--border-color);">
+                            <h4 style="font-size:1rem; font-weight:700; margin-bottom:1rem; color:var(--color-primary-light);">Logistics Partner Status</h4>
+                            <div class="form-group">
+                                <label class="form-label" for="availability">Availability State</label>
+                                <select id="availability" name="availability" class="form-control">
+                                    <option value="available" {{ 'selected' if profile and profile.availability == 'available' else '' }}>Available for Dispatches</option>
+                                    <option value="busy" {{ 'selected' if profile and profile.availability == 'busy' else '' }}>Busy on Delivery</option>
+                                    <option value="offline" {{ 'selected' if profile and profile.availability == 'offline' else '' }}>Offline</option>
+                                </select>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:2rem;">
+                        <button type="submit" class="btn btn-primary" style="padding:0.75rem 2rem;">Save Profile Changes</button>
+                    </div>
+                </form>
+
+                <!-- Verification Documents Overview -->
+                {% if documents %}
+                    <div style="margin-top:2.5rem; padding-top:1.5rem; border-top:1px solid var(--border-color);">
+                        <h4 style="font-size:1rem; font-weight:700; margin-bottom:1rem;">Uploaded Verification Documents</h4>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>File</th>
+                                        <th>Status</th>
+                                        <th>Remarks</th>
+                                        <th>Uploaded On</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for doc in documents %}
+                                        <tr>
+                                            <td><a href="{{ doc.file_path }}" target="_blank" style="color:var(--color-primary-light);">View Document</a></td>
+                                            <td>
+                                                <span class="badge {{ 'badge-success' if doc.status == 'approved' else 'badge-warning' if doc.status == 'pending' else 'badge-danger' }}">
+                                                    {{ doc.status | upper }}
+                                                </span>
+                                            </td>
+                                            <td>{{ doc.remarks or 'Under administrative review' }}</td>
+                                            <td>{{ doc.created_at }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

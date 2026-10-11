@@ -1,0 +1,103 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}ERA Admin | Overview Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Admin Command Console</h1>
+        <p class="page-subtitle">Unified oversight across stakeholders, verification queues, bookings, and platform activity</p>
+    </div>
+    <div style="display:flex; gap:0.75rem;">
+        <a href="{{ url_for('admin.verifications_view') }}" class="btn btn-primary">Pending Verifications ({{ metrics.pending_verifications }})</a>
+    </div>
+</div>
+
+<!-- Stat Cards Grid -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon indigo">👥</div>
+        <div>
+            <div class="stat-label">Total Users</div>
+            <div class="stat-value">{{ metrics.total_users }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon rose">🛡️</div>
+        <div>
+            <div class="stat-label">Pending Verification</div>
+            <div class="stat-value" style="color:var(--color-warning);">{{ metrics.pending_verifications }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon cyan">📅</div>
+        <div>
+            <div class="stat-label">Total Events</div>
+            <div class="stat-value">{{ metrics.total_events }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon emerald">💳</div>
+        <div>
+            <div class="stat-label">Total Bookings</div>
+            <div class="stat-value">{{ metrics.total_bookings }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon emerald">💰</div>
+        <div>
+            <div class="stat-label">Completed Revenue</div>
+            <div class="stat-value">₹{{ "{:,.2f}".format(metrics.total_revenue) }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity / Audit Log Stream -->
+<div class="glass-card" style="margin-top:2rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+        <h3 style="font-family:var(--font-display); font-size:1.25rem; font-weight:700;">Live Platform Audit Activity</h3>
+        <a href="{{ url_for('admin.audit_logs_view') }}" class="btn btn-secondary btn-sm">View Full Audit Log →</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Action</th>
+                    <th>Entity</th>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in metrics.recent_activity %}
+                    <tr>
+                        <td style="font-size:0.8rem; color:var(--text-dim);">{{ log.created_at }}</td>
+                        <td><strong style="color:var(--color-primary-light);">{{ log.action }}</strong></td>
+                        <td>{{ log.entity }} {% if log.entity_id %}#{{ log.entity_id }}{% endif %}</td>
+                        <td>{{ log.user_name or 'System' }} ({{ log.user_email or 'N/A' }})</td>
+                        <td>
+                            {% if log.user_role %}
+                                <span class="badge badge-info">{{ roles.get(log.user_role, log.user_role) }}</span>
+                            {% else %}
+                                <span style="color:var(--text-dim);">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {{ 'badge-success' if log.result == 'success' else 'badge-danger' }}">
+                                {{ log.result | upper }}
+                            </span>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">No recent activity recorded.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

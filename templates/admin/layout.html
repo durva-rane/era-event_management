@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ERA Admin Command Console{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <style>
+        .admin-badge { padding: 0.25rem 0.6rem; border-radius: var(--radius-full); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; }
+        .filter-bar { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-bottom: 1.5rem; background: var(--bg-card); padding: 1rem 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); }
+        .action-btn-group { display: flex; gap: 0.4rem; align-items: center; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <!-- Admin Sidebar -->
+    <aside class="sidebar">
+        <div class="brand-header">
+            <div class="brand-logo" style="background: linear-gradient(135deg, #ef4444, #8b5cf6);">ADM</div>
+            <div>
+                <div style="font-family:var(--font-display); font-weight:700; font-size:1.1rem;">ERA Admin</div>
+                <div style="font-size:0.65rem; color:var(--color-primary-light); text-transform:uppercase;">Command & Control</div>
+            </div>
+        </div>
+
+        <nav class="nav-section">
+            <div class="nav-category">Core Console</div>
+            <a href="{{ url_for('admin.dashboard_view') }}" class="nav-link {% if request.endpoint == 'admin.dashboard_view' %}active{% endif %}">
+                <span>⚡</span> Dashboard Overview
+            </a>
+            <a href="{{ url_for('admin.verifications_view') }}" class="nav-link {% if request.endpoint == 'admin.verifications_view' %}active{% endif %}">
+                <span>🛡️</span> Verification Queue
+            </a>
+            <a href="{{ url_for('admin.users_view') }}" class="nav-link {% if request.endpoint == 'admin.users_view' %}active{% endif %}">
+                <span>👥</span> User Management
+            </a>
+
+            <div class="nav-category">Entities & Directory</div>
+            <a href="{{ url_for('admin.venues_view') }}" class="nav-link {% if request.endpoint == 'admin.venues_view' %}active{% endif %}">
+                <span>🏛️</span> Venues Directory
+            </a>
+            <a href="{{ url_for('admin.bookings_view') }}" class="nav-link {% if request.endpoint == 'admin.bookings_view' %}active{% endif %}">
+                <span>📅</span> Bookings Console
+            </a>
+            <a href="{{ url_for('admin.stakeholders_view', role='organizer') }}" class="nav-link {% if 'organizer' in request.path %}active{% endif %}">
+                <span>📋</span> Organizers
+            </a>
+            <a href="{{ url_for('admin.stakeholders_view', role='vendor') }}" class="nav-link {% if 'vendor' in request.path %}active{% endif %}">
+                <span>🧰</span> Vendors & Suppliers
+            </a>
+            <a href="{{ url_for('admin.stakeholders_view', role='client') }}" class="nav-link {% if 'client' in request.path %}active{% endif %}">
+                <span>👤</span> Clients
+            </a>
+            <a href="{{ url_for('admin.stakeholders_view', role='delivery_partner') }}" class="nav-link {% if 'delivery_partner' in request.path %}active{% endif %}">
+                <span>🚚</span> Delivery Partners
+            </a>
+
+            <div class="nav-category">Finance & Governance</div>
+            <a href="{{ url_for('admin.payments_view') }}" class="nav-link {% if request.endpoint == 'admin.payments_view' %}active{% endif %}">
+                <span>💳</span> All Payments (₹)
+            </a>
+            <a href="{{ url_for('admin.audit_logs_view') }}" class="nav-link {% if request.endpoint == 'admin.audit_logs_view' %}active{% endif %}">
+                <span>📜</span> Audit Logs
+            </a>
+
+            <div class="nav-category">Navigation</div>
+            <a href="/dashboard" class="nav-link">
+                <span>📊</span> User Perspective
+            </a>
+            <a href="{{ url_for('auth.logout_action') }}" class="nav-link">
+                <span>🔒</span> Sign Out
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <main class="main-wrapper">
+        <header class="top-header">
+            <div>
+                <span class="badge badge-danger" style="letter-spacing:1px; font-weight:700;">SYSTEM ADMIN PRIVILEGED ACCESS</span>
+            </div>
+            <div class="header-actions">
+                <a href="/admin/verifications" class="btn btn-secondary btn-sm">Review Queue</a>
+                <div class="user-profile-btn" onclick="window.location.href='/profile'">
+                    <div class="user-avatar" style="background: linear-gradient(135deg, #ef4444, #6366f1);">AD</div>
+                    <span class="user-name">{{ session.get('user_name', 'System Admin') }}</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="badge badge-{{ 'danger' if category in ['danger', 'error'] else 'success' if category == 'success' else 'warning' }}" 
+                             style="display:flex; padding:0.85rem 1.25rem; border-radius:var(--radius-md); margin-bottom:1.5rem; font-size:0.9rem; width:100%;">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+</div>
+
+<script>
+async function performAdminAction(url, body, successMsg = 'Operation completed successfully.') {
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            alert(data.message || successMsg);
+            window.location.reload();
+        } else {
+            alert(data.message || 'Error executing admin action.');
+        }
+    } catch (e) {
+        alert('Server communication error.');
+    }
+}
+</script>
+</body>
+</html>

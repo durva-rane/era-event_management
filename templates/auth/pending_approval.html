@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERA | Account Verification Pending</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+</head>
+<body>
+<div class="page-view">
+    <header class="landing-nav">
+        <div class="brand-wrap" style="cursor:pointer;" onclick="window.location.href='/'">
+            <div class="brand-logo">ERA</div>
+            <div>
+                <div class="brand-text-title">ERA Platform</div>
+                <div style="font-size:0.7rem; color:var(--color-primary-light); text-transform:uppercase; letter-spacing:1px;">Event Resource & Administration</div>
+            </div>
+        </div>
+        <nav class="top-right-menu">
+            <a class="nav-item-link" href="{{ url_for('auth.logout_action') }}">Log Out</a>
+        </nav>
+    </header>
+
+    <main style="padding: 4rem 1rem;">
+        <div class="auth-container" style="max-width: 550px; text-align:center;">
+            <div style="width:65px; height:65px; border-radius:50%; background:rgba(245, 158, 11, 0.15); color:var(--color-warning); display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 1.5rem;">
+                ⏳
+            </div>
+            <h2 style="font-size:1.6rem; font-weight:700;">Account Under Verification</h2>
+            <p style="color:var(--text-muted); font-size:0.95rem; margin: 1rem 0 1.75rem; line-height: 1.6;">
+                Thank you for registering on the ERA Platform. As a business stakeholder (Vendor, Venue Owner, or Organizer), your registration credentials and verification documents are currently being reviewed by system administrators to maintain platform safety and trust.
+            </p>
+
+            <div style="background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:1rem; text-align:left; font-size:0.85rem; margin-bottom:1.75rem;">
+                <div>🔒 <strong>Current Status:</strong> <span class="badge badge-warning" style="margin-left:0.4rem;">Pending Admin Review</span></div>
+                <div style="margin-top:0.5rem; color:var(--text-dim);">Protected capabilities (listing venues, publishing vendor services, and creating client contracts) will unlock automatically once approved.</div>
+            </div>
+
+            <div style="display:flex; gap:1rem; justify-content:center;">
+                <a href="{{ url_for('auth.profile_page') }}" class="btn btn-secondary">Review Submitted Profile</a>
+                <a href="{{ url_for('auth.logout_action') }}" class="btn btn-primary">Sign Out</a>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

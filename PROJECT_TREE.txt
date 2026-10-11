@@ -1,0 +1,13 @@
+ERA_Registration/
+├── app.py
+├── schema.sql
+├── requirements.txt
+├── .env.example
+├── README.md
+├── templates/
+│   └── register.html
+└── static/
+    ├── css/
+    │   └── style.css
+    └── js/
+        └── register.js

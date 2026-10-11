@@ -1,0 +1,70 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}ERA Admin | All Payments{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Financial Transactions & Payments (₹)</h1>
+        <p class="page-subtitle">Detailed ledger of all booking deposits, invoice payments, and transaction IDs</p>
+    </div>
+</div>
+
+<div class="glass-card">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Payment ID</th>
+                    <th>Transaction ID</th>
+                    <th>Event & Client</th>
+                    <th>Booking Ref</th>
+                    <th>Payment Method</th>
+                    <th>Amount (INR)</th>
+                    <th>Invoice No.</th>
+                    <th>Status</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in payments %}
+                    <tr>
+                        <td><strong>#PAY-{{ p.id }}</strong></td>
+                        <td>
+                            <code style="background:rgba(0,0,0,0.4); padding:0.2rem 0.5rem; border-radius:4px; font-size:0.8rem; color:var(--color-primary-light);">
+                                {{ p.transaction_id }}
+                            </code>
+                        </td>
+                        <td>
+                            <div style="font-weight:700;">{{ p.event_name }}</div>
+                            <div style="font-size:0.75rem; color:var(--text-dim);">👤 {{ p.client_name }}</div>
+                        </td>
+                        <td>
+                            <div>#BK-{{ p.booking_id }} ({{ p.booking_type | upper }})</div>
+                        </td>
+                        <td>
+                            <span class="badge badge-info">{{ p.method | replace('_', ' ') | upper }}</span>
+                        </td>
+                        <td>
+                            <strong style="color:var(--color-success); font-size:1rem;">₹{{ "{:,.2f}".format(p.amount) }}</strong>
+                        </td>
+                        <td>
+                            {{ p.invoice_no or 'N/A' }}
+                        </td>
+                        <td>
+                            <span class="badge {{ 'badge-success' if p.status == 'success' else 'badge-warning' if p.status == 'pending' else 'badge-danger' }}">
+                                {{ p.status | upper }}
+                            </span>
+                        </td>
+                        <td style="font-size:0.78rem; color:var(--text-dim);">{{ p.created_at }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="9" style="text-align:center; padding:2rem; color:var(--text-muted);">No payment records found.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

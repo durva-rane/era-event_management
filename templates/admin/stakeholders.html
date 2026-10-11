@@ -1,0 +1,85 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}ERA Admin | Manage {{ role_name }}s{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Manage {{ role_name }} Stakeholders</h1>
+        <p class="page-subtitle">Directory of registered {{ role_name }} profiles with verification and activity statuses</p>
+    </div>
+    <div style="display:flex; gap:0.5rem;">
+        <a href="{{ url_for('admin.stakeholders_view', role='organizer') }}" class="btn btn-secondary btn-sm {% if role == 'organizer' %}active{% endif %}">Organizers</a>
+        <a href="{{ url_for('admin.stakeholders_view', role='vendor') }}" class="btn btn-secondary btn-sm {% if role == 'vendor' %}active{% endif %}">Vendors</a>
+        <a href="{{ url_for('admin.stakeholders_view', role='client') }}" class="btn btn-secondary btn-sm {% if role == 'client' %}active{% endif %}">Clients</a>
+        <a href="{{ url_for('admin.stakeholders_view', role='delivery_partner') }}" class="btn btn-secondary btn-sm {% if role == 'delivery_partner' %}active{% endif %}">Delivery Partners</a>
+    </div>
+</div>
+
+<div class="glass-card">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>User ID</th>
+                    <th>Representative Name</th>
+                    <th>Contact Info</th>
+                    <th>Role-Specific Entity Details</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td><strong>#{{ item.id }}</strong></td>
+                        <td>
+                            <div style="font-weight:700;">{{ item.name }}</div>
+                            {% if item.business_name or item.organization_name %}
+                                <div style="font-size:0.8rem; color:var(--color-primary-light);">🏢 {{ item.business_name or item.organization_name }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>{{ item.email }}</div>
+                            <div style="font-size:0.78rem; color:var(--text-dim);">+91 {{ item.phone }}</div>
+                        </td>
+                        <td style="font-size:0.85rem; max-width:280px;">
+                            {{ item.details or item.event_requirements or 'Standard registration' }}
+                            {% if item.pricing %}
+                                <div style="font-size:0.78rem; color:var(--text-dim); margin-top:2px;">Base Rate: ₹{{ "{:,.2f}".format(item.pricing) }}</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {{ 'badge-success' if item.status == 'active' else 'badge-warning' if item.status == 'pending' else 'badge-danger' }}">
+                                {{ item.status | upper }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-btn-group">
+                                {% if item.status == 'active' %}
+                                    <button class="btn btn-secondary btn-sm" style="color:var(--color-danger);" onclick="toggleDeactivate({{ item.id }}, 'inactive')">Deactivate</button>
+                                {% else %}
+                                    <button class="btn btn-secondary btn-sm" style="color:var(--color-success);" onclick="toggleDeactivate({{ item.id }}, 'active')">Activate</button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">
+                            No {{ role_name }} accounts found in database.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function toggleDeactivate(userId, status) {
+    if (!confirm(`Are you sure you want to mark user #${userId} as ${status}?`)) return;
+    performAdminAction(`/api/admin/users/${userId}/status`, { status });
+}
+</script>
+{% endblock %}
