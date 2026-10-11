@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ERA | User Profile & Settings</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-</head>
+<script src="{{ url_for('static', filename='js/csrf.js') }}" defer></script></head>
 <body>
 <div class="page-view">
     <!-- Top Header -->
@@ -20,7 +20,7 @@
 
         <div class="header-actions">
             <a href="/dashboard" class="btn btn-secondary btn-sm">← Back to Dashboard</a>
-            <a href="{{ url_for('auth.logout_action') }}" class="btn btn-secondary btn-sm">Sign Out</a>
+            <form method="post" action="{{ url_for('auth.logout_action') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-secondary btn-sm" type="submit">Sign Out</button></form>
         </div>
     </header>
 
@@ -71,7 +71,7 @@
             <div class="glass-card">
                 <h3 style="font-size:1.2rem; font-weight:700; margin-bottom:1.5rem;">Edit Profile Details</h3>
 
-                <form method="POST" action="{{ url_for('auth.profile_api') }}">
+                <form method="POST" action="{{ url_for('auth.profile_api') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label" for="name">Full Name / Representative *</label>

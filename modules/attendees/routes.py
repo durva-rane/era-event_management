@@ -15,7 +15,7 @@ def _error(exc): return jsonify(success=False,message=getattr(exc,"message",str(
 @role_required("organizer")
 def attendee_management_page(event_id):
     try:
-        guests=services.guest_list(session["user_id"],session["user_role"],event_id)
+        guests=services.guest_list(session["user_id"],session["user_role"],event_id,request.args)
         summary=services.live_summary(session["user_id"],session["user_role"],event_id)
         return render_template("attendees/manage.html",guests=guests,summary=summary,event_id=event_id)
     except AppError as exc: return render_template("errors/error.html",code=exc.status_code,message=exc.message),exc.status_code
@@ -25,7 +25,7 @@ def attendee_management_page(event_id):
 @role_required("organizer")
 def attendee_collection(event_id):
     try:
-        if request.method=="GET": return jsonify(success=True,attendees=services.guest_list(session["user_id"],session["user_role"],event_id))
+        if request.method=="GET": return jsonify(success=True,attendees=services.guest_list(session["user_id"],session["user_role"],event_id,request.args))
         attendee_id,token=services.add_attendee(session["user_id"],session["user_role"],event_id,_data())
         return jsonify(success=True,attendee_id=attendee_id,rsvp_path=url_for("attendees.rsvp_page",token=token)),201
     except AppError as exc: return _error(exc)
@@ -82,10 +82,10 @@ def rsvp_page(token):
 @attendees_bp.route("/my/invitations",methods=["GET"])
 @role_required("attendee")
 def my_invitations():
-    invitations=services.attendee_invitations(session.get("user_email",""))
+    invitations=services.attendee_invitations(session.get("user_email",""),request.args)
     return render_template("attendees/invitations.html",invitations=invitations)
 
 
 @attendees_bp.get("/api/my/invitations")
 @role_required("attendee")
-def my_invitations_api(): return jsonify(success=True,invitations=services.attendee_invitations(session.get("user_email","")))
+def my_invitations_api(): return jsonify(success=True,invitations=services.attendee_invitations(session.get("user_email",""),request.args))

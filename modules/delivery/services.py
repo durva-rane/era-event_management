@@ -4,6 +4,7 @@ from datetime import datetime
 from core.db import get_db_cursor
 from core.errors import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from core.notification_service import notify_in_transaction
+from core.pagination import page_args
 
 TRANSITIONS = {
     "assigned": {"accepted", "rejected", "cancelled"},
@@ -133,24 +134,27 @@ def assign_task(task_id, admin_or_organizer_id, role, partner_id):
         return task_id
 
 
-def list_partner_tasks(partner_id):
+def list_partner_tasks(partner_id, filters=None):
+    page,size,offset=page_args(filters or {})
     with get_db_cursor(commit_on_success=False) as (cur, _):
         cur.execute("""SELECT t.*,e.name event_name FROM delivery_tasks t JOIN events e ON e.id=t.event_id
-        WHERE t.partner_id=%s ORDER BY t.scheduled_at,t.id""", (partner_id,))
+        WHERE t.partner_id=%s ORDER BY t.scheduled_at,t.id LIMIT %s OFFSET %s""", (partner_id,size,offset))
         return cur.fetchall()
 
 
-def organizer_events(user_id):
+def organizer_events(user_id, filters=None):
+    page,size,offset=page_args(filters or {})
     with get_db_cursor(commit_on_success=False) as (cur, _):
-        cur.execute("SELECT id,name,event_date,status FROM events WHERE organizer_id=%s ORDER BY event_date DESC", (user_id,))
+        cur.execute("SELECT id,name,event_date,status FROM events WHERE organizer_id=%s ORDER BY event_date DESC LIMIT %s OFFSET %s", (user_id,size,offset))
         return cur.fetchall()
 
 
-def list_event_tasks(event_id, user_id, role):
+def list_event_tasks(event_id, user_id, role, filters=None):
+    page,size,offset=page_args(filters or {})
     with get_db_cursor(commit_on_success=False) as (cur, _):
         _event(cur, event_id, user_id, role, lock=False)
         cur.execute("""SELECT t.*,u.name partner_name FROM delivery_tasks t LEFT JOIN users u ON u.id=t.partner_id
-        WHERE t.event_id=%s ORDER BY t.scheduled_at,t.id""", (event_id,))
+        WHERE t.event_id=%s ORDER BY t.scheduled_at,t.id LIMIT %s OFFSET %s""", (event_id,size,offset))
         return cur.fetchall()
 
 

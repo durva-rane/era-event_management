@@ -488,14 +488,14 @@ function renderDashboardOverview() {
       <div class="stat-icon emerald">💰</div>
       <div>
         <div class="stat-label">Total Budget Pool</div>
-        <div class="stat-value">$${totalBudget.toLocaleString()}</div>
+        <div class="stat-value">$${escapeHtml(totalBudget.toLocaleString())}</div>
       </div>
     </div>
     <div class="stat-card">
       <div class="stat-icon rose">💵</div>
       <div>
         <div class="stat-label">Total Spent</div>
-        <div class="stat-value">$${totalSpent.toLocaleString()}</div>
+        <div class="stat-value">$${escapeHtml(totalSpent.toLocaleString())}</div>
       </div>
     </div>
   `;
@@ -504,14 +504,14 @@ function renderDashboardOverview() {
     <div style="padding:1rem; background:rgba(0,0,0,0.2); border:1px solid var(--border-color); border-radius:var(--radius-md); margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center;">
       <div>
         <div style="display:flex; align-items:center; gap:0.5rem;">
-          <h4 style="font-size:1rem; font-weight:700;">${ev.name}</h4>
-          <span class="badge ${ev.liveStatus === 'In-Progress' ? 'badge-warning' : 'badge-info'}">${ev.liveStatus}</span>
+          <h4 style="font-size:1rem; font-weight:700;">${escapeHtml(ev.name)}</h4>
+          <span class="badge ${ev.liveStatus === 'In-Progress' ? 'badge-warning' : 'badge-info'}">${escapeHtml(ev.liveStatus)}</span>
         </div>
         <div style="font-size:0.82rem; color:var(--text-muted); margin-top:0.25rem;">
-          📅 ${ev.date} (${ev.startTime} - ${ev.endTime}) &bull; 📍 ${ev.venue}
+          📅 ${escapeHtml(ev.date)} (${escapeHtml(ev.startTime)} - ${escapeHtml(ev.endTime)}) &bull; 📍 ${escapeHtml(ev.venue)}
         </div>
       </div>
-      <button class="btn btn-secondary btn-sm" onclick="openEventSummaryModal(${ev.id})">Brief PDF</button>
+      <button class="btn btn-secondary btn-sm" data-open-event-summary="${escapeHtml(ev.id)}">Brief PDF</button>
     </div>
   `).join('');
 }
@@ -554,23 +554,23 @@ function handleSaveProfile(e) {
 function renderEventsView() {
   document.getElementById('eventsTableBody').innerHTML = currentStore.events.map(ev => `
     <tr>
-      <td><strong>#${ev.id}</strong></td>
+      <td><strong>#${escapeHtml(ev.id)}</strong></td>
       <td>
-        <div style="font-weight:700; color:var(--text-main);">${ev.name}</div>
-        <div style="font-size:0.78rem; color:var(--text-dim);">${ev.category}</div>
+        <div style="font-weight:700; color:var(--text-main);">${escapeHtml(ev.name)}</div>
+        <div style="font-size:0.78rem; color:var(--text-dim);">${escapeHtml(ev.category)}</div>
       </td>
       <td>
-        <div>${ev.date}</div>
-        <div style="font-size:0.78rem; color:var(--text-dim);">${ev.startTime} - ${ev.endTime}</div>
+        <div>${escapeHtml(ev.date)}</div>
+        <div style="font-size:0.78rem; color:var(--text-dim);">${escapeHtml(ev.startTime)} - ${escapeHtml(ev.endTime)}</div>
       </td>
-      <td>${ev.venue}</td>
-      <td><span class="badge ${ev.liveStatus === 'In-Progress' ? 'badge-warning' : 'badge-info'}">${ev.liveStatus}</span></td>
+      <td>${escapeHtml(ev.venue)}</td>
+      <td><span class="badge ${ev.liveStatus === 'In-Progress' ? 'badge-warning' : 'badge-info'}">${escapeHtml(ev.liveStatus)}</span></td>
       <td style="width:120px;">
-        <div style="font-size:0.75rem; color:var(--text-dim);">${ev.progress}%</div>
-        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${ev.progress}%;"></div></div>
+        <div style="font-size:0.75rem; color:var(--text-dim);">${escapeHtml(ev.progress)}%</div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${escapeHtml(ev.progress)}%;"></div></div>
       </td>
       <td>
-        <button class="btn btn-secondary btn-sm" onclick="openEventSummaryModal(${ev.id})">Summary</button>
+        <button class="btn btn-secondary btn-sm" data-open-event-summary="${escapeHtml(ev.id)}">Summary</button>
       </td>
     </tr>
   `).join('');
@@ -581,16 +581,16 @@ function renderVenuesView() {
   document.getElementById('venuesGrid').innerHTML = currentStore.venues.map(v => `
     <div class="glass-card">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
-        <h3 style="font-family:var(--font-display); font-size:1.1rem; font-weight:700;">${v.name}</h3>
-        <span class="badge ${v.availabilityStatus === 'Available' ? 'badge-success' : 'badge-danger'}">${v.availabilityStatus}</span>
+        <h3 style="font-family:var(--font-display); font-size:1.1rem; font-weight:700;">${escapeHtml(v.name)}</h3>
+        <span class="badge ${v.availabilityStatus === 'Available' ? 'badge-success' : 'badge-danger'}">${escapeHtml(v.availabilityStatus)}</span>
       </div>
       <div style="font-size:0.84rem; color:var(--text-muted); margin-bottom:1rem; display:flex; flex-direction:column; gap:0.4rem;">
-        <div>📍 ${v.location}</div>
-        <div>👥 Capacity: <strong>${v.capacity} Guests</strong></div>
-        <div>💵 Rate: <strong>$${v.pricePerDay.toLocaleString()} / day</strong></div>
+        <div>📍 ${escapeHtml(v.location)}</div>
+        <div>👥 Capacity: <strong>${escapeHtml(v.capacity)} Guests</strong></div>
+        <div>💵 Rate: <strong>$${escapeHtml(v.pricePerDay.toLocaleString())} / day</strong></div>
       </div>
       <button class="btn ${v.availabilityStatus === 'Available' ? 'btn-primary' : 'btn-secondary'} btn-sm" style="width:100%;" 
-        ${v.availabilityStatus === 'Booked' ? 'disabled' : ''} onclick="bookVenue('${v.name}')">
+        ${v.availabilityStatus === 'Booked' ? 'disabled' : ''} data-book-venue="${escapeHtml(v.name)}">
         ${v.availabilityStatus === 'Available' ? 'Book Venue' : 'Currently Booked'}
       </button>
     </div>
@@ -602,15 +602,15 @@ function renderVendorsView() {
   document.getElementById('vendorsGrid').innerHTML = currentStore.vendors.map(v => `
     <div class="glass-card">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.75rem;">
-        <h3 style="font-family:var(--font-display); font-size:1.1rem; font-weight:700;">${v.businessName}</h3>
-        <span class="badge badge-info">${v.rating}</span>
+        <h3 style="font-family:var(--font-display); font-size:1.1rem; font-weight:700;">${escapeHtml(v.businessName)}</h3>
+        <span class="badge badge-info">${escapeHtml(v.rating)}</span>
       </div>
       <div style="font-size:0.84rem; color:var(--text-muted); margin-bottom:1rem; display:flex; flex-direction:column; gap:0.4rem;">
-        <div>🛠️ Service: <strong>${v.serviceType}</strong></div>
-        <div>💵 Pricing: ${v.pricing}</div>
-        <div>📞 Phone: ${v.phone}</div>
+        <div>🛠️ Service: <strong>${escapeHtml(v.serviceType)}</strong></div>
+        <div>💵 Pricing: ${escapeHtml(v.pricing)}</div>
+        <div>📞 Phone: ${escapeHtml(v.phone)}</div>
       </div>
-      <button class="btn btn-secondary btn-sm" style="width:100%;" onclick="requestVendorQuote('${v.businessName}')">Request Quote</button>
+      <button class="btn btn-secondary btn-sm" style="width:100%;" data-request-vendor="${escapeHtml(v.businessName)}">Request Quote</button>
     </div>
   `).join('');
 }
@@ -626,33 +626,33 @@ function renderBudgetView() {
       <div class="stat-icon indigo">📊</div>
       <div>
         <div class="stat-label">Total Allocated</div>
-        <div class="stat-value">$${totalAllocated.toLocaleString()}</div>
+        <div class="stat-value">$${escapeHtml(totalAllocated.toLocaleString())}</div>
       </div>
     </div>
     <div class="stat-card">
       <div class="stat-icon rose">💵</div>
       <div>
         <div class="stat-label">Total Spent</div>
-        <div class="stat-value">$${totalSpent.toLocaleString()}</div>
+        <div class="stat-value">$${escapeHtml(totalSpent.toLocaleString())}</div>
       </div>
     </div>
     <div class="stat-card">
       <div class="stat-icon emerald">💰</div>
       <div>
         <div class="stat-label">Remaining Balance</div>
-        <div class="stat-value">$${totalRemaining.toLocaleString()}</div>
+        <div class="stat-value">$${escapeHtml(totalRemaining.toLocaleString())}</div>
       </div>
     </div>
   `;
 
   document.getElementById('budgetExpensesTableBody').innerHTML = currentStore.expenses.map(x => `
     <tr>
-      <td><strong>${x.category}</strong></td>
-      <td>${x.description}</td>
-      <td>$${x.allocated.toLocaleString()}</td>
-      <td style="color:var(--color-danger);">$${x.spent.toLocaleString()}</td>
-      <td style="color:var(--color-success);">$${(x.allocated - x.spent).toLocaleString()}</td>
-      <td><span class="badge ${x.status === 'Paid' ? 'badge-success' : 'badge-warning'}">${x.status}</span></td>
+      <td><strong>${escapeHtml(x.category)}</strong></td>
+      <td>${escapeHtml(x.description)}</td>
+      <td>$${escapeHtml(x.allocated.toLocaleString())}</td>
+      <td style="color:var(--color-danger);">$${escapeHtml(x.spent.toLocaleString())}</td>
+      <td style="color:var(--color-success);">$${escapeHtml((x.allocated - x.spent).toLocaleString())}</td>
+      <td><span class="badge ${x.status === 'Paid' ? 'badge-success' : 'badge-warning'}">${escapeHtml(x.status)}</span></td>
     </tr>
   `).join('');
 }
@@ -662,16 +662,16 @@ function renderAttendeesView() {
   document.getElementById('attendeeEventsGrid').innerHTML = currentStore.events.map(ev => `
     <div class="glass-card">
       <div style="display:flex; justify-content:space-between; margin-bottom:0.75rem;">
-        <span class="badge badge-info">${ev.category}</span>
+        <span class="badge badge-info">${escapeHtml(ev.category)}</span>
         <span class="badge badge-success">RSVP Confirmed</span>
       </div>
-      <h3 style="font-family:var(--font-display); font-size:1.15rem; font-weight:700; margin-bottom:0.4rem;">${ev.name}</h3>
+      <h3 style="font-family:var(--font-display); font-size:1.15rem; font-weight:700; margin-bottom:0.4rem;">${escapeHtml(ev.name)}</h3>
       <div style="background:rgba(0,0,0,0.3); padding:0.75rem; border-radius:var(--radius-md); font-size:0.82rem; margin-bottom:1rem;">
-        <div>📅 Date: ${ev.date} (${ev.startTime})</div>
-        <div>📍 Venue: ${ev.venue}</div>
-        <div>🎟️ Pass Code: <strong style="color:var(--color-primary-light);">TICK-ERA-${ev.id}88</strong></div>
+        <div>📅 Date: ${escapeHtml(ev.date)} (${escapeHtml(ev.startTime)})</div>
+        <div>📍 Venue: ${escapeHtml(ev.venue)}</div>
+        <div>🎟️ Pass Code: <strong style="color:var(--color-primary-light);">TICK-ERA-${escapeHtml(ev.id)}88</strong></div>
       </div>
-      <button class="btn btn-primary btn-sm" style="width:100%;" onclick="openEventSummaryModal(${ev.id})">Download Digital Pass</button>
+      <button class="btn btn-primary btn-sm" style="width:100%;" data-open-event-summary="${escapeHtml(ev.id)}">Download Digital Pass</button>
     </div>
   `).join('');
 }
@@ -680,16 +680,16 @@ function renderAttendeesView() {
 function renderDeliveryView() {
   document.getElementById('deliveryTableBody').innerHTML = currentStore.deliveries.map(d => `
     <tr>
-      <td><strong>${d.partnerId}</strong></td>
-      <td>${d.item}</td>
+      <td><strong>${escapeHtml(d.partnerId)}</strong></td>
+      <td>${escapeHtml(d.item)}</td>
       <td>
-        <div style="font-size:0.85rem;">From: ${d.origin}</div>
-        <div style="font-size:0.85rem; color:var(--color-primary-light);">To: ${d.destination}</div>
+        <div style="font-size:0.85rem;">From: ${escapeHtml(d.origin)}</div>
+        <div style="font-size:0.85rem; color:var(--color-primary-light);">To: ${escapeHtml(d.destination)}</div>
       </td>
-      <td>${d.event}</td>
-      <td><span class="badge ${d.status === 'Delivered' ? 'badge-success' : d.status === 'In-Transit' ? 'badge-warning' : 'badge-info'}">${d.status}</span></td>
+      <td>${escapeHtml(d.event)}</td>
+      <td><span class="badge ${d.status === 'Delivered' ? 'badge-success' : d.status === 'In-Transit' ? 'badge-warning' : 'badge-info'}">${escapeHtml(d.status)}</span></td>
       <td>
-        <select class="form-control" style="padding:0.3rem 0.5rem; font-size:0.8rem;" onchange="updateDeliveryStatus(${d.id}, this.value)">
+        <select class="form-control" data-delivery-id="${escapeHtml(d.id)}" style="padding:0.3rem 0.5rem; font-size:0.8rem;">
           <option value="Pending" ${d.status === 'Pending' ? 'selected' : ''}>Pending</option>
           <option value="In-Transit" ${d.status === 'In-Transit' ? 'selected' : ''}>In-Transit</option>
           <option value="Delivered" ${d.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
@@ -702,10 +702,10 @@ function renderDeliveryView() {
 // 9. CHAT VIEW
 function renderChatView() {
   document.getElementById('chatContactsList').innerHTML = currentStore.stakeholders.filter(s => s.role !== currentStore.activeRole).map(s => `
-    <div class="chat-contact" onclick="selectChatContact('${s.name}')">
-      <div class="user-avatar" style="width:30px; height:30px; font-size:0.75rem;">${s.name.substring(0, 2).toUpperCase()}</div>
+    <div class="chat-contact" data-chat-contact="${escapeHtml(s.name)}">
+      <div class="user-avatar" style="width:30px; height:30px; font-size:0.75rem;">${escapeHtml(s.name.substring(0, 2).toUpperCase())}</div>
       <div>
-        <div style="font-size:0.85rem; font-weight:600;">${s.name}</div>
+        <div style="font-size:0.85rem; font-weight:600;">${escapeHtml(s.name)}</div>
         <div style="font-size:0.7rem; color:var(--text-dim);">${getRoleName(s.role)}</div>
       </div>
     </div>
@@ -716,9 +716,9 @@ function renderChatView() {
 
 function renderChatMessages() {
   document.getElementById('chatMessagesBody').innerHTML = currentStore.chatMessages.map(msg => `
-    <div class="message-bubble ${msg.type}">
-      <div style="font-size:0.7rem; opacity:0.8; margin-bottom:0.2rem;">${msg.sender} &bull; ${msg.time}</div>
-      <div>${msg.text}</div>
+    <div class="message-bubble ${['incoming','outgoing'].includes(msg.type) ? msg.type : 'incoming'}">
+      <div style="font-size:0.7rem; opacity:0.8; margin-bottom:0.2rem;">${escapeHtml(msg.sender)} &bull; ${escapeHtml(msg.time)}</div>
+      <div>${escapeHtml(msg.text)}</div>
     </div>
   `).join('');
 
@@ -777,12 +777,12 @@ function renderAdminView() {
 
   document.getElementById('adminUsersTableBody').innerHTML = currentStore.stakeholders.map(u => `
     <tr>
-      <td><strong>#USR-${u.id}</strong></td>
-      <td>${u.name}</td>
+      <td><strong>#USR-${escapeHtml(u.id)}</strong></td>
+      <td>${escapeHtml(u.name)}</td>
       <td><span class="badge badge-info">${getRoleName(u.role)}</span></td>
-      <td>${u.email}</td>
-      <td>${u.phone}</td>
-      <td><span class="badge badge-success">${u.status}</span></td>
+      <td>${escapeHtml(u.email)}</td>
+      <td>${escapeHtml(u.phone)}</td>
+      <td><span class="badge badge-success">${escapeHtml(u.status)}</span></td>
     </tr>
   `).join('');
 }
@@ -804,6 +804,27 @@ function renderSVGChart() {
     `;
   }).join('');
 }
+
+// Escape every user supplied string before placing it in a generated HTML fragment.
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>\"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+document.addEventListener('click', event => {
+  const venue = event.target.closest('[data-book-venue]');
+  if (venue) bookVenue(venue.dataset.bookVenue);
+  const vendor = event.target.closest('[data-request-vendor]');
+  if (vendor) requestVendorQuote(vendor.dataset.requestVendor);
+  const contact = event.target.closest('[data-chat-contact]');
+  if (contact) selectChatContact(contact.dataset.chatContact);
+  const summary = event.target.closest('[data-open-event-summary]');
+  if (summary) openEventSummaryModal(Number(summary.dataset.openEventSummary));
+});
+
+document.addEventListener('change', event => {
+  const delivery = event.target.closest('[data-delivery-id]');
+  if (delivery) updateDeliveryStatus(Number(delivery.dataset.deliveryId), delivery.value);
+});
 
 // GENERAL UTILITIES
 function handleCreateEvent(e) {
@@ -854,17 +875,17 @@ function openEventSummaryModal(eventId) {
           <p style="margin:0; color:#64748b; font-size:0.8rem;">Event Resource & Administration System</p>
         </div>
         <div style="text-align:right;">
-          <div style="font-weight:700; font-size:1rem;">${ev.name}</div>
-          <div style="font-size:0.8rem; color:#64748b;">${ev.category}</div>
+          <div style="font-weight:700; font-size:1rem;">${escapeHtml(ev.name)}</div>
+          <div style="font-size:0.8rem; color:#64748b;">${escapeHtml(ev.category)}</div>
         </div>
       </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; background:#f8fafc; padding:0.85rem; border-radius:8px; font-size:0.88rem; margin-bottom:1rem;">
-        <div><strong>Date:</strong> ${ev.date}</div>
-        <div><strong>Time:</strong> ${ev.startTime} - ${ev.endTime}</div>
-        <div><strong>Venue:</strong> ${ev.venue}</div>
-        <div><strong>Status:</strong> ${ev.liveStatus}</div>
+        <div><strong>Date:</strong> ${escapeHtml(ev.date)}</div>
+        <div><strong>Time:</strong> ${escapeHtml(ev.startTime)} - ${escapeHtml(ev.endTime)}</div>
+        <div><strong>Venue:</strong> ${escapeHtml(ev.venue)}</div>
+        <div><strong>Status:</strong> ${escapeHtml(ev.liveStatus)}</div>
       </div>
-      <p style="font-size:0.88rem; color:#475569;">${ev.description}</p>
+      <p style="font-size:0.88rem; color:#475569;">${escapeHtml(ev.description)}</p>
     </div>
   `;
 
@@ -879,7 +900,11 @@ function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  toast.innerHTML = `<span>${type === 'success' ? '✅' : type === 'danger' ? '❌' : 'ℹ️'}</span><div>${message}</div>`;
+  const icon = document.createElement('span');
+  icon.textContent = type === 'success' ? '✅' : type === 'danger' ? '❌' : 'ℹ️';
+  const body = document.createElement('div');
+  body.textContent = String(message);
+  toast.append(icon, body);
   container.appendChild(toast);
   setTimeout(() => toast.remove(), 3500);
 }

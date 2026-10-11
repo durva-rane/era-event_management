@@ -294,13 +294,12 @@ class AuthService:
         return {
             "success": True,
             "message": "If that email is registered in our system, you will receive password reset instructions.",
-            "token": token if not Config.SMTP_USER else None,  # returned for dev/testing when SMTP is offline
         }
 
     @staticmethod
     def _send_reset_email(recipient: str, name: str, token: str) -> None:
         if not Config.SMTP_USER or not Config.SMTP_PASSWORD:
-            logger.info(f"[DEV MODE] Password reset token for {recipient}: {token}")
+            logger.info("Password reset email queued but SMTP is not configured.")
             return
 
         msg = EmailMessage()
@@ -308,7 +307,7 @@ class AuthService:
         msg["From"] = Config.SMTP_FROM
         msg["To"] = recipient
 
-        reset_url = f"http://127.0.0.1:5000/reset-password/{token}"
+        reset_url = f"{Config.PUBLIC_BASE_URL.rstrip('/')}/reset-password/{token}"
         msg.set_content(
             f"""Hello {name},
 

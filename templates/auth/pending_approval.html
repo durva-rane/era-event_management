@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ERA | Account Verification Pending</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-</head>
+<script src="{{ url_for('static', filename='js/csrf.js') }}" defer></script></head>
 <body>
 <div class="page-view">
     <header class="landing-nav">
@@ -17,7 +17,7 @@
             </div>
         </div>
         <nav class="top-right-menu">
-            <a class="nav-item-link" href="{{ url_for('auth.logout_action') }}">Log Out</a>
+            <form method="post" action="{{ url_for('auth.logout_action') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="nav-item-link" type="submit">Log Out</button></form>
         </nav>
     </header>
 
@@ -38,7 +38,7 @@
 
             <div style="display:flex; gap:1rem; justify-content:center;">
                 <a href="{{ url_for('auth.profile_page') }}" class="btn btn-secondary">Review Submitted Profile</a>
-                <a href="{{ url_for('auth.logout_action') }}" class="btn btn-primary">Sign Out</a>
+                <form method="post" action="{{ url_for('auth.logout_action') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit" class="btn btn-primary">Sign Out</button></form>
             </div>
         </div>
     </main>

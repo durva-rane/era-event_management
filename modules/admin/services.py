@@ -11,6 +11,7 @@ from core.errors import NotFoundError, ValidationError
 from core.events import emit_event
 from core.security import hash_password
 from modules.admin.repositories import AdminRepository
+from modules.bookings.lifecycle_service import admin_update_booking_status
 
 logger = logging.getLogger("era.admin.service")
 
@@ -29,9 +30,11 @@ class AdminService:
     def list_users(
         search: Optional[str] = None,
         role: Optional[str] = None,
-        status: Optional[str] = None
+        status: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0
     ) -> List[Dict[str, Any]]:
-        return AdminRepository.get_users(search=search, role=role, status=status)
+        return AdminRepository.get_users(search=search, role=role, status=status, limit=limit, offset=offset)
 
     @staticmethod
     def get_user_profile_detail(user_id: int) -> Dict[str, Any]:
@@ -129,8 +132,8 @@ class AdminService:
     # ---------------- Verification Queue ----------------
 
     @staticmethod
-    def get_verification_queue(status_filter: Optional[str] = None) -> List[Dict[str, Any]]:
-        return AdminRepository.get_verification_queue(status_filter=status_filter)
+    def get_verification_queue(status_filter: Optional[str] = None, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+        return AdminRepository.get_verification_queue(status_filter=status_filter, limit=limit, offset=offset)
 
     @staticmethod
     def process_verification_decision(
@@ -198,12 +201,12 @@ class AdminService:
     # ---------------- Stakeholders, Venues, Bookings ----------------
 
     @staticmethod
-    def list_stakeholders(role: str) -> List[Dict[str, Any]]:
-        return AdminRepository.get_stakeholders_by_role(role)
+    def list_stakeholders(role: str, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+        return AdminRepository.get_stakeholders_by_role(role, limit, offset)
 
     @staticmethod
-    def list_venues() -> List[Dict[str, Any]]:
-        return AdminRepository.get_all_venues()
+    def list_venues(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+        return AdminRepository.get_all_venues(limit, offset)
 
     @staticmethod
     def set_venue_status(venue_id: int, status: str, admin_id: int) -> Dict[str, Any]:
@@ -224,37 +227,25 @@ class AdminService:
         return {"success": True, "message": f"Venue #{venue_id} status updated to '{status}'."}
 
     @staticmethod
-    def list_bookings() -> List[Dict[str, Any]]:
-        return AdminRepository.get_all_bookings()
+    def list_bookings(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+        return AdminRepository.get_all_bookings(limit, offset)
 
     @staticmethod
-    def set_booking_status(booking_id: int, status: str, admin_id: int) -> Dict[str, Any]:
-        allowed = ("pending", "requested", "confirmed", "rejected", "cancelled")
-        if status not in allowed:
-            raise ValidationError(f"Invalid booking status.")
-
-        AdminRepository.update_booking_status(booking_id, status)
-
-        emit_event(
-            "booking_status_changed",
-            audit_action=f"BOOKING_{status.upper()}",
-            audit_entity="bookings",
-            audit_entity_id=booking_id,
-            actor_id=admin_id,
-            result="success",
-        )
-        return {"success": True, "message": f"Booking #{booking_id} status updated to '{status}'."}
+    def set_booking_status(booking_id: int, status: str, admin_id: int, reason: Optional[str] = None) -> Dict[str, Any]:
+        return admin_update_booking_status(booking_id, status, admin_id, "admin", reason)
 
     # ---------------- Payments & Audit Logs ----------------
 
     @staticmethod
-    def list_all_payments() -> List[Dict[str, Any]]:
-        return AdminRepository.get_all_payments()
+    def list_all_payments(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+        return AdminRepository.get_all_payments(limit, offset)
 
     @staticmethod
     def list_audit_logs(
         user_id: Optional[int] = None,
         action: Optional[str] = None,
-        date_query: Optional[str] = None
+        date_query: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0
     ) -> List[Dict[str, Any]]:
-        return AdminRepository.get_audit_logs(user_id=user_id, action=action, date_query=date_query)
+        return AdminRepository.get_audit_logs(user_id=user_id, action=action, date_query=date_query, limit=limit, offset=offset)

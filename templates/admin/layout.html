@@ -10,7 +10,7 @@
         .filter-bar { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-bottom: 1.5rem; background: var(--bg-card); padding: 1rem 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); }
         .action-btn-group { display: flex; gap: 0.4rem; align-items: center; }
     </style>
-</head>
+<script src="{{ url_for('static', filename='js/csrf.js') }}" defer></script></head>
 <body>
 <div class="app-container">
     <!-- Admin Sidebar -->
@@ -67,9 +67,7 @@
             <a href="/dashboard" class="nav-link">
                 <span>📊</span> User Perspective
             </a>
-            <a href="{{ url_for('auth.logout_action') }}" class="nav-link">
-                <span>🔒</span> Sign Out
-            </a>
+            <form method="post" action="{{ url_for('auth.logout_action') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="nav-link" type="submit"><span>🔒</span> Sign Out</button></form>
         </nav>
     </aside>
 

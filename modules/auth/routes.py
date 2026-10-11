@@ -4,6 +4,7 @@ Auth Module Routes (HTTP Request/Response Layer Only)
 """
 
 from datetime import datetime, timezone
+from urllib.parse import urljoin, urlparse
 from flask import flash, jsonify, redirect, render_template, request, session, url_for
 from core.config import Config
 from core.decorators import login_required
@@ -18,6 +19,16 @@ def is_json_request() -> bool:
         or request.is_json
         or request.headers.get("Accept") == "application/json"
     )
+
+
+def _safe_next(target):
+    if not target:
+        return url_for("dashboard")
+    candidate = urlparse(urljoin(request.host_url, target))
+    origin = urlparse(request.host_url)
+    if candidate.scheme in ("http", "https") and candidate.netloc == origin.netloc:
+        return candidate.path + (("?" + candidate.query) if candidate.query else "") + (("#" + candidate.fragment) if candidate.fragment else "")
+    return url_for("dashboard")
 
 
 # ==============================================================================
@@ -120,7 +131,7 @@ def login_action():
         session["last_active"] = datetime.now(timezone.utc).timestamp()
         session.permanent = True
 
-        next_url = request.args.get("next") or data.get("next") or url_for("dashboard")
+        next_url = _safe_next(request.args.get("next") or data.get("next"))
 
         if is_json_request():
             return jsonify(
@@ -150,6 +161,8 @@ def login_action():
 @auth_bp.route("/api/logout", methods=["POST"])
 def logout_action():
     """Destroys current session and logs audit event."""
+    if request.method == "GET":
+        return redirect(url_for("auth.login_page"))
     user_id = session.get("user_id")
     AuthService.logout_user(user_id)
     session.clear()

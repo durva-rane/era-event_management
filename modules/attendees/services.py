@@ -9,8 +9,13 @@ from core.config import Config
 from core.db import get_db_cursor
 from core.errors import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from core.notification_service import notify_in_transaction
+from core.pagination import page_args
 
 EMAIL_RE=re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
+
+def _invitation_status_for_rsvp(status):
+    return "registered" if status == "accepted" else ("declined" if status == "declined" else "invited")
 
 
 def _audit(cur,user_id,action,entity,entity_id):
@@ -107,10 +112,11 @@ def import_csv(user_id,role,event_id,file_stream):
     return report
 
 
-def guest_list(user_id,role,event_id):
+def guest_list(user_id,role,event_id,filters=None):
+    page,size,offset=page_args(filters or {})
     with get_db_cursor(commit_on_success=False) as (cur,_):
         event=_event_access(cur,event_id,user_id,role)
-        cur.execute("SELECT id,event_id,name,email,phone,invitation_status,rsvp_status,checked_in_at,checked_out_at,created_at FROM attendees WHERE event_id=%s ORDER BY name",(event_id,)); return cur.fetchall()
+        cur.execute("SELECT id,event_id,name,email,phone,invitation_status,rsvp_status,checked_in_at,checked_out_at,created_at FROM attendees WHERE event_id=%s ORDER BY name LIMIT %s OFFSET %s",(event_id,size,offset)); return cur.fetchall()
 
 
 def rsvp_page_data(token):
@@ -125,7 +131,7 @@ def submit_rsvp(token,status):
     with get_db_cursor() as (cur,_):
         cur.execute("SELECT a.*,e.name event_name,e.event_date,e.start_time FROM attendees a JOIN events e ON e.id=a.event_id WHERE a.rsvp_token=%s FOR UPDATE",(token,)); row=cur.fetchone()
         if not row: raise NotFoundError("This RSVP link is invalid.")
-        invitation="registered" if status=="accepted" else ("declined" if status=="declined" else "invited")
+        invitation=_invitation_status_for_rsvp(status)
         cur.execute("UPDATE attendees SET rsvp_status=%s,invitation_status=%s WHERE id=%s",(status,invitation,row["id"]))
         _audit(cur,None,"ATTENDEE_RSVP_UPDATED","attendees",row["id"])
         cur.execute("SELECT id FROM users WHERE email=%s",(row["email"],)); user=cur.fetchone()
@@ -135,11 +141,12 @@ def submit_rsvp(token,status):
         return {"status":status,"event_name":row["event_name"]}
 
 
-def attendee_invitations(email):
+def attendee_invitations(email,filters=None):
+    page,size,offset=page_args(filters or {})
     with get_db_cursor(commit_on_success=False) as (cur,_):
         cur.execute("""SELECT a.id,a.name,a.email,a.invitation_status,a.rsvp_status,a.checked_in_at,a.checked_out_at,
         e.id event_id,e.name event_name,e.category,e.description,e.event_date,e.start_time,e.end_time,v.name venue_name,v.location venue_location
-        FROM attendees a JOIN events e ON e.id=a.event_id LEFT JOIN venues v ON v.id=e.venue_id WHERE LOWER(a.email)=LOWER(%s) ORDER BY e.event_date""",(email,)); return cur.fetchall()
+        FROM attendees a JOIN events e ON e.id=a.event_id LEFT JOIN venues v ON v.id=e.venue_id WHERE LOWER(a.email)=LOWER(%s) ORDER BY e.event_date LIMIT %s OFFSET %s""",(email,size,offset)); return cur.fetchall()
 
 
 def check_in(user_id,role,event_id,attendee_id,checkout=False):

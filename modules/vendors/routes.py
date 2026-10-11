@@ -37,7 +37,7 @@ def recommendations():
 @vendors_bp.get("/api/vendors/<int:vendor_id>")
 def profile_get(vendor_id):
     try:
-        profile=services.vendor_profile(vendor_id); profile["services"]=services.list_services(vendor_id)
+        profile=services.vendor_profile(vendor_id); profile["services"]=services.list_services(vendor_id,request.args)
         return jsonify(success=True,vendor=profile)
     except AppError as exc: return _error(exc)
 
@@ -52,7 +52,7 @@ def profile_me():
 
 @vendors_bp.get("/api/vendors/<int:vendor_id>/services")
 def services_list(vendor_id):
-    try: return jsonify(success=True,services=services.list_services(vendor_id))
+    try: return jsonify(success=True,services=services.list_services(vendor_id,request.args))
     except AppError as exc: return _error(exc)
 
 
@@ -74,7 +74,7 @@ def service_edit(service_id):
 
 @vendors_bp.get("/api/vendors/<int:vendor_id>/availability")
 def availability_list(vendor_id):
-    try: return jsonify(success=True,availability=services.list_availability(vendor_id))
+    try: return jsonify(success=True,availability=services.list_availability(vendor_id,request.args))
     except AppError as exc: return _error(exc)
 
 
@@ -97,7 +97,7 @@ def availability_edit(slot_id):
 @vendors_bp.route("/api/vendor-bookings",methods=["GET","POST"])
 @login_required
 def bookings():
-    if request.method=="GET": return jsonify(success=True,bookings=services.list_bookings(session["user_id"],session["user_role"]))
+    if request.method=="GET": return jsonify(success=True,bookings=services.list_bookings(session["user_id"],session["user_role"],request.args))
     if session.get("user_role") not in ("client","organizer","admin"): return jsonify(success=False,message="Only clients and organizers can request vendor bookings."),403
     data=_data()
     try: return jsonify(success=True,booking_id=services.create_booking(session["user_id"],session["user_role"],data.get("event_id"),data)),201
@@ -106,7 +106,7 @@ def bookings():
 
 @vendors_bp.get("/api/vendor-bookings/requests")
 @role_required("vendor")
-def booking_requests(): return jsonify(success=True,requests=services.vendor_requests(session["user_id"]))
+def booking_requests(): return jsonify(success=True,requests=services.vendor_requests(session["user_id"],request.args))
 
 
 @vendors_bp.get("/vendor/bookings/requests")

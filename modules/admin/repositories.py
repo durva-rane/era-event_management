@@ -148,7 +148,7 @@ class AdminRepository:
     # ---------------- Verification Queue ----------------
 
     @staticmethod
-    def get_verification_queue(status_filter: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_verification_queue(status_filter: Optional[str] = None, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
         query = [
             """
             SELECT d.id AS doc_id, d.user_id, d.file_path, d.status AS doc_status, d.remarks, d.created_at,
@@ -168,7 +168,8 @@ class AdminRepository:
             query.append("AND d.status = %s")
             params.append(status_filter)
 
-        query.append("ORDER BY d.id DESC")
+        query.append("ORDER BY d.id DESC LIMIT %s OFFSET %s")
+        params.extend([limit, offset])
 
         with get_db_cursor(commit_on_success=False) as (cursor, _):
             cursor.execute(" ".join(query), tuple(params))
@@ -217,15 +218,15 @@ class AdminRepository:
     # ---------------- Stakeholder & Venue & Booking Entity Management ----------------
 
     @staticmethod
-    def get_all_venues() -> List[Dict[str, Any]]:
+    def get_all_venues(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
         with get_db_cursor(commit_on_success=False) as (cursor, _):
             cursor.execute(
                 """
                 SELECT v.*, u.name AS owner_name, u.email AS owner_email, u.phone AS owner_phone
                 FROM venues v
                 JOIN users u ON v.owner_id = u.id
-                ORDER BY v.id DESC
-                """
+                ORDER BY v.id DESC LIMIT %s OFFSET %s
+                """, (limit, offset)
             )
             return cursor.fetchall()
 
@@ -236,7 +237,7 @@ class AdminRepository:
             return cursor.rowcount > 0
 
     @staticmethod
-    def get_all_bookings() -> List[Dict[str, Any]]:
+    def get_all_bookings(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
         with get_db_cursor(commit_on_success=False) as (cursor, _):
             cursor.execute(
                 """
@@ -247,19 +248,13 @@ class AdminRepository:
                 JOIN events e ON b.event_id = e.id
                 LEFT JOIN venues v ON b.venue_id = v.id
                 LEFT JOIN users u ON b.vendor_id = u.id
-                ORDER BY b.id DESC
-                """
+                ORDER BY b.id DESC LIMIT %s OFFSET %s
+                """, (limit, offset)
             )
             return cursor.fetchall()
 
     @staticmethod
-    def update_booking_status(booking_id: int, status: str) -> bool:
-        with get_db_cursor(commit_on_success=True) as (cursor, _):
-            cursor.execute("UPDATE bookings SET status = %s WHERE id = %s", (status, booking_id))
-            return cursor.rowcount > 0
-
-    @staticmethod
-    def get_stakeholders_by_role(role: str) -> List[Dict[str, Any]]:
+    def get_stakeholders_by_role(role: str, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
         table_map = {
             "client": ("clients", "c.event_requirements, '' as details"),
             "organizer": ("organizers", "c.organization_name, c.specialization as details, c.verification_status"),
@@ -278,15 +273,15 @@ class AdminRepository:
                        {extra_cols}
                 FROM users u
                 JOIN {table} c ON u.id = c.user_id
-                ORDER BY u.id DESC
-                """
+                ORDER BY u.id DESC LIMIT %s OFFSET %s
+                """, (limit, offset)
             )
             return cursor.fetchall()
 
     # ---------------- Payments ----------------
 
     @staticmethod
-    def get_all_payments() -> List[Dict[str, Any]]:
+    def get_all_payments(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
         with get_db_cursor(commit_on_success=False) as (cursor, _):
             cursor.execute(
                 """
@@ -298,8 +293,8 @@ class AdminRepository:
                 JOIN events e ON b.event_id = e.id
                 JOIN users u ON e.owner_id = u.id
                 LEFT JOIN invoices i ON b.id = i.booking_id
-                ORDER BY p.id DESC
-                """
+                ORDER BY p.id DESC LIMIT %s OFFSET %s
+                """, (limit, offset)
             )
             return cursor.fetchall()
 
@@ -310,7 +305,8 @@ class AdminRepository:
         user_id: Optional[int] = None,
         action: Optional[str] = None,
         date_query: Optional[str] = None,
-        limit: int = 150
+        limit: int = 100,
+        offset: int = 0
     ) -> List[Dict[str, Any]]:
         query = [
             """
@@ -334,8 +330,8 @@ class AdminRepository:
             query.append("AND DATE(a.created_at) = %s")
             params.append(date_query)
 
-        query.append("ORDER BY a.created_at DESC LIMIT %s")
-        params.append(limit)
+        query.append("ORDER BY a.created_at DESC LIMIT %s OFFSET %s")
+        params.extend([limit, offset])
 
         with get_db_cursor(commit_on_success=False) as (cursor, _):
             cursor.execute(" ".join(query), tuple(params))

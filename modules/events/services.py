@@ -6,6 +6,7 @@ from core.db import get_db_cursor
 from core.errors import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from modules.events.booking_service import cancel_event_bookings, cancel_event_venue_booking, upsert_confirmed_venue_booking
 from core.notification_service import notify_in_transaction
+from core.pagination import page_args
 
 
 def _time(value, field):
@@ -56,7 +57,9 @@ def search_venues(filters):
     if filters.get("date") and filters.get("start_time") and filters.get("end_time"):
         sql += " AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.venue_id=v.id AND b.booking_date=%s AND b.status='confirmed' AND b.start_time < %s AND b.end_time > %s)"
         params.extend([filters["date"], _time(filters["end_time"], "End time"), _time(filters["start_time"], "Start time")])
-    sql += " ORDER BY v.price_per_hour, v.name"
+    page, size, offset = page_args(filters)
+    sql += " ORDER BY v.price_per_hour, v.name LIMIT %s OFFSET %s"
+    params.extend((size, offset))
     with get_db_cursor() as (cur, _):
         cur.execute(sql, tuple(params)); return cur.fetchall()
 
@@ -173,7 +176,8 @@ def list_events(user_id,role,filters=None):
     elif role!="admin": return []
     if filters.get("start"): sql+=" AND e.event_date >= %s"; args.append(filters["start"])
     if filters.get("end"): sql+=" AND e.event_date <= %s"; args.append(filters["end"])
-    sql+=" ORDER BY e.event_date,e.start_time"
+    page, size, offset = page_args(filters)
+    sql+=" ORDER BY e.event_date,e.start_time LIMIT %s OFFSET %s"; args.extend((size, offset))
     with get_db_cursor() as (cur,_): cur.execute(sql,tuple(args)); return cur.fetchall()
 
 

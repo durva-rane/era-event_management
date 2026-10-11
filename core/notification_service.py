@@ -5,7 +5,7 @@ from email.message import EmailMessage
 from threading import Thread
 
 from core.config import Config
-from core.db import get_db_cursor
+from core.db import after_commit, get_db_cursor
 
 logger=logging.getLogger("era.notifications")
 
@@ -60,7 +60,9 @@ def notify_in_transaction(cursor,user_id,message,event_type="general",link=None,
             else: notification_id=None
         else: notification_id=None
     else: notification_id=None
-    _dispatch(channels,email,mobile,subject or f"ERA: {event_type.replace('_',' ').title()}",str(message).strip(),link)
+    args=(channels,email,mobile,subject or f"ERA: {event_type.replace('_',' ').title()}",str(message).strip(),link)
+    if not after_commit(lambda: _dispatch(*args)):
+        _dispatch(*args)
     return notification_id
 
 

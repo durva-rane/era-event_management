@@ -5,8 +5,9 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from core.config import Config
 from core.db import get_db_cursor
 from core.errors import AuthorizationError, ConflictError, NotFoundError, ValidationError
-from modules.finance.services import confirmed_booking_changed, refund_booking_in_cursor, refresh_budget_alerts
+from modules.bookings.lifecycle_service import confirmed_booking_changed, refund_booking_in_cursor, refresh_budget_alerts
 from core.notification_service import notify_in_transaction
+from core.pagination import page_args
 
 
 def _audit(cur,user_id,action,entity,entity_id):
@@ -33,6 +34,10 @@ def _event_access(event,user_id,role):
     if role=="client" and event["owner_id"]==user_id: return
     if role=="organizer" and event["organizer_id"]==user_id: return
     raise AuthorizationError("You are not a client or assigned organizer for this event.")
+
+
+def _commission_amount(amount):
+    return (Decimal(str(amount))*Decimal(str(Config.ERA_COMMISSION_PERCENT))/Decimal(100)).quantize(Decimal("0.01"),rounding=ROUND_HALF_UP)
 
 
 def save_profile(user_id,data):
@@ -85,8 +90,9 @@ def service_action(user_id,service_id,data=None,delete=False):
         return target
 
 
-def list_services(vendor_id):
-    with get_db_cursor() as (cur,_): cur.execute("SELECT * FROM vendor_services WHERE vendor_id=%s ORDER BY name",(vendor_id,)); return cur.fetchall()
+def list_services(vendor_id, filters=None):
+    page,size,offset=page_args(filters or {})
+    with get_db_cursor() as (cur,_): cur.execute("SELECT * FROM vendor_services WHERE vendor_id=%s ORDER BY name LIMIT %s OFFSET %s",(vendor_id,size,offset)); return cur.fetchall()
 
 
 def availability_action(user_id,slot_id,data=None,delete=False):
@@ -114,8 +120,9 @@ def availability_action(user_id,slot_id,data=None,delete=False):
         return slot_id
 
 
-def list_availability(vendor_id):
-    with get_db_cursor() as (cur,_): cur.execute("SELECT * FROM vendor_availability WHERE vendor_id=%s ORDER BY date,start_time",(vendor_id,)); return cur.fetchall()
+def list_availability(vendor_id, filters=None):
+    page,size,offset=page_args(filters or {})
+    with get_db_cursor() as (cur,_): cur.execute("SELECT * FROM vendor_availability WHERE vendor_id=%s ORDER BY date,start_time LIMIT %s OFFSET %s",(vendor_id,size,offset)); return cur.fetchall()
 
 
 def browse_vendors(filters):
@@ -135,19 +142,17 @@ def browse_vendors(filters):
     if maximum_price is not None: sql+=" AND COALESCE(s.price,v.pricing)<=%s"; args.append(maximum_price)
     if minimum_price is not None: sql+=" AND COALESCE(s.price,v.pricing)>=%s"; args.append(minimum_price)
     if minimum_rating is not None: sql+=" AND EXISTS(SELECT 1 FROM reviews rr WHERE rr.vendor_id=v.user_id GROUP BY rr.vendor_id HAVING AVG(rr.rating)>=%s)"; args.append(minimum_rating)
+    if filters.get("date") and filters.get("start_time") and filters.get("end_time"):
+        start,end=_clock(filters["start_time"],"Start time"),_clock(filters["end_time"],"End time")
+        sql+=" AND EXISTS(SELECT 1 FROM vendor_availability va WHERE va.vendor_id=v.user_id AND va.date=%s AND va.start_time<=%s AND va.end_time>=%s)"
+        args.extend((filters["date"],start,end))
+        sql+=" AND NOT EXISTS(SELECT 1 FROM bookings b WHERE b.vendor_id=v.user_id AND b.booking_type='vendor' AND b.booking_date=%s AND b.status='confirmed' AND b.start_time<%s AND b.end_time>%s)"
+        args.extend((filters["date"],end,start))
     sql+=" GROUP BY v.user_id"
+    page,size,offset=page_args(filters)
+    sql+=" ORDER BY average_rating DESC, v.business_name LIMIT %s OFFSET %s"; args.extend((size,offset))
     with get_db_cursor() as (cur,_):
-        cur.execute(sql,tuple(args)); rows=cur.fetchall()
-        if filters.get("date") and filters.get("start_time") and filters.get("end_time"):
-            start,end=_clock(filters["start_time"],"Start time"),_clock(filters["end_time"],"End time")
-            matches=[]
-            for row in rows:
-                cur.execute("SELECT 1 FROM vendor_availability WHERE vendor_id=%s AND date=%s AND start_time<=%s AND end_time>=%s LIMIT 1",(row["user_id"],filters["date"],start,end))
-                available=bool(cur.fetchone())
-                cur.execute("SELECT 1 FROM bookings WHERE vendor_id=%s AND booking_type='vendor' AND booking_date=%s AND status='confirmed' AND start_time<%s AND end_time>%s LIMIT 1",(row["user_id"],filters["date"],end,start))
-                if available and not cur.fetchone(): matches.append(row)
-            rows=matches
-        return rows
+        cur.execute(sql,tuple(args)); return cur.fetchall()
 
 
 def compare_vendors(ids):
@@ -203,7 +208,7 @@ def respond_booking(vendor_id,booking_id,decision):
             if not cur.fetchone(): raise ConflictError("The requested time is outside your availability slots.")
             cur.execute("SELECT id FROM bookings WHERE vendor_id=%s AND booking_type='vendor' AND booking_date=%s AND status='confirmed' AND start_time<%s AND end_time>%s FOR UPDATE",(vendor_id,booking["booking_date"],booking["end_time"],booking["start_time"]))
             if cur.fetchone(): raise ConflictError("The requested time overlaps another confirmed booking.")
-            commission=(Decimal(str(booking["amount"]))*Decimal(str(Config.ERA_COMMISSION_PERCENT))/Decimal(100)).quantize(Decimal("0.01"),rounding=ROUND_HALF_UP)
+            commission=_commission_amount(booking["amount"])
             status="confirmed"
             cur.execute("UPDATE bookings SET status=%s,commission_amount=%s WHERE id=%s",(status,commission,booking_id))
             confirmed_booking_changed(cur,booking_id,vendor_id)
@@ -216,14 +221,15 @@ def respond_booking(vendor_id,booking_id,decision):
         return {"booking_id":booking_id,"status":status,"commission_amount":commission if decision=="accepted" else Decimal("0.00")}
 
 
-def vendor_requests(vendor_id):
+def vendor_requests(vendor_id, filters=None):
+    page,size,offset=page_args(filters or {})
     with get_db_cursor() as (cur,_):
         cur.execute("""SELECT b.*,e.name AS event_name,e.category,e.expected_attendees,u.name AS requester_name,vs.name AS service_name
         FROM bookings b JOIN events e ON e.id=b.event_id JOIN users u ON u.id=e.owner_id LEFT JOIN vendor_services vs ON vs.id=b.service_id
-        WHERE b.vendor_id=%s AND b.booking_type='vendor' AND b.status='requested' ORDER BY b.booking_date,b.start_time""",(vendor_id,)); return cur.fetchall()
+        WHERE b.vendor_id=%s AND b.booking_type='vendor' AND b.status='requested' ORDER BY b.booking_date,b.start_time LIMIT %s OFFSET %s""",(vendor_id,size,offset)); return cur.fetchall()
 
 
-def list_bookings(user_id,role):
+def list_bookings(user_id,role,filters=None):
     sql="""SELECT b.*,e.name AS event_name,v.business_name AS vendor_name,vs.name AS service_name
       FROM bookings b JOIN events e ON e.id=b.event_id LEFT JOIN vendors v ON v.user_id=b.vendor_id LEFT JOIN vendor_services vs ON vs.id=b.service_id
       WHERE b.booking_type='vendor'"""
@@ -232,7 +238,8 @@ def list_bookings(user_id,role):
     elif role=="client": sql+=" AND e.owner_id=%s"; args.append(user_id)
     elif role=="organizer": sql+=" AND e.organizer_id=%s"; args.append(user_id)
     elif role!="admin": return []
-    sql+=" ORDER BY b.booking_date DESC,b.start_time"
+    page,size,offset=page_args(filters or {})
+    sql+=" ORDER BY b.booking_date DESC,b.start_time LIMIT %s OFFSET %s"; args.extend((size,offset))
     with get_db_cursor() as (cur,_): cur.execute(sql,tuple(args)); return cur.fetchall()
 
 

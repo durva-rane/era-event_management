@@ -13,20 +13,20 @@ def _json_error(err):
 @delivery_bp.get("/delivery/tasks")
 @role_required("delivery_partner")
 def partner_dashboard():
-    return render_template("delivery/partner.html", tasks=services.list_partner_tasks(session["user_id"]))
+    return render_template("delivery/partner.html", tasks=services.list_partner_tasks(session["user_id"], request.args))
 
 
 @delivery_bp.get("/deliveries")
 @role_required("organizer")
 def organizer_deliveries():
-    return render_template("delivery/events.html", events=services.organizer_events(session["user_id"]))
+    return render_template("delivery/events.html", events=services.organizer_events(session["user_id"], request.args))
 
 
 @delivery_bp.get("/events/<int:event_id>/deliveries")
 @role_required("organizer")
 def organizer_tracking(event_id):
     try:
-        tasks = services.list_event_tasks(event_id, session["user_id"], session["user_role"])
+        tasks = services.list_event_tasks(event_id, session["user_id"], session["user_role"], request.args)
         return render_template("delivery/organizer.html", event_id=event_id, tasks=tasks)
     except AppError as err:
         return render_template("errors/error.html", code=err.status_code, message=err.message), err.status_code

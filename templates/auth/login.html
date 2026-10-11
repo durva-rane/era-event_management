@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ERA | Stakeholder Login</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-</head>
+<script src="{{ url_for('static', filename='js/csrf.js') }}" defer></script></head>
 <body>
 <div class="page-view">
     <header class="landing-nav">
@@ -42,7 +42,7 @@
 
             <div id="loginAlert" class="badge badge-danger" style="display:none; padding:0.75rem 1rem; border-radius:var(--radius-md); margin-bottom:1.25rem; font-size:0.85rem; width:100%; justify-content:center;"></div>
 
-            <form id="loginForm" method="POST" action="{{ url_for('auth.login_action') }}">
+            <form id="loginForm" method="POST" action="{{ url_for('auth.login_action') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <input type="hidden" name="next" value="{{ next }}">
 
                 <div class="form-group">

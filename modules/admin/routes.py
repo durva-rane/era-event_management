@@ -7,6 +7,7 @@ from flask import flash, jsonify, redirect, render_template, request, session, u
 from core.config import Config
 from core.decorators import role_required
 from core.errors import AppError
+from core.pagination import page_args
 from modules.admin import admin_bp
 from modules.admin.services import AdminService
 
@@ -17,6 +18,11 @@ def is_json_request() -> bool:
         or request.is_json
         or request.headers.get("Accept") == "application/json"
     )
+
+
+def _page():
+    _, size, offset = page_args(request.args)
+    return size, offset
 
 
 # ==============================================================================
@@ -49,7 +55,8 @@ def users_view():
     role = request.args.get("role", "").strip()
     status = request.args.get("status", "").strip()
 
-    users_list = AdminService.list_users(search=search or None, role=role or None, status=status or None)
+    size, offset = _page()
+    users_list = AdminService.list_users(search=search or None, role=role or None, status=status or None, limit=size, offset=offset)
     return render_template(
         "admin/users.html",
         users=users_list,
@@ -66,7 +73,8 @@ def api_users():
     search = request.args.get("search", "").strip()
     role = request.args.get("role", "").strip()
     status = request.args.get("status", "").strip()
-    users_list = AdminService.list_users(search=search or None, role=role or None, status=status or None)
+    size, offset = _page()
+    users_list = AdminService.list_users(search=search or None, role=role or None, status=status or None, limit=size, offset=offset)
     return jsonify(success=True, users=users_list)
 
 
@@ -138,7 +146,8 @@ def api_reset_user_access(user_id):
 @role_required("admin")
 def verifications_view():
     status = request.args.get("status", "").strip()
-    queue = AdminService.get_verification_queue(status_filter=status or None)
+    size, offset = _page()
+    queue = AdminService.get_verification_queue(status_filter=status or None, limit=size, offset=offset)
     return render_template("admin/verifications.html", queue=queue, current_status=status, roles=Config.ROLES)
 
 
@@ -146,7 +155,8 @@ def verifications_view():
 @role_required("admin")
 def api_verifications():
     status = request.args.get("status", "").strip()
-    queue = AdminService.get_verification_queue(status_filter=status or None)
+    size, offset = _page()
+    queue = AdminService.get_verification_queue(status_filter=status or None, limit=size, offset=offset)
     return jsonify(success=True, queue=queue)
 
 
@@ -183,7 +193,8 @@ def api_process_verification(doc_id):
 @admin_bp.route("/admin/stakeholders/<role>", methods=["GET"])
 @role_required("admin")
 def stakeholders_view(role):
-    items = AdminService.list_stakeholders(role)
+    size, offset = _page()
+    items = AdminService.list_stakeholders(role, size, offset)
     role_name = Config.ROLES.get(role, role.title())
     return render_template("admin/stakeholders.html", items=items, role=role, role_name=role_name)
 
@@ -191,7 +202,8 @@ def stakeholders_view(role):
 @admin_bp.route("/admin/venues", methods=["GET"])
 @role_required("admin")
 def venues_view():
-    venues = AdminService.list_venues()
+    size, offset = _page()
+    venues = AdminService.list_venues(size, offset)
     return render_template("admin/venues.html", venues=venues)
 
 
@@ -218,7 +230,8 @@ def api_update_venue_status(venue_id):
 @admin_bp.route("/admin/bookings", methods=["GET"])
 @role_required("admin")
 def bookings_view():
-    bookings = AdminService.list_bookings()
+    size, offset = _page()
+    bookings = AdminService.list_bookings(size, offset)
     return render_template("admin/bookings.html", bookings=bookings)
 
 
@@ -230,7 +243,7 @@ def api_update_booking_status(booking_id):
     admin_id = session["user_id"]
 
     try:
-        res = AdminService.set_booking_status(booking_id, status, admin_id)
+        res = AdminService.set_booking_status(booking_id, status, admin_id, data.get("reason"))
         if is_json_request():
             return jsonify(res), 200
         flash(res["message"], "success")
@@ -249,14 +262,16 @@ def api_update_booking_status(booking_id):
 @admin_bp.route("/admin/payments", methods=["GET"])
 @role_required("admin")
 def payments_view():
-    payments = AdminService.list_all_payments()
+    size, offset = _page()
+    payments = AdminService.list_all_payments(size, offset)
     return render_template("admin/payments.html", payments=payments)
 
 
 @admin_bp.route("/api/admin/payments", methods=["GET"])
 @role_required("admin")
 def api_payments():
-    payments = AdminService.list_all_payments()
+    size, offset = _page()
+    payments = AdminService.list_all_payments(size, offset)
     return jsonify(success=True, payments=payments)
 
 
@@ -271,7 +286,8 @@ def audit_logs_view():
     action = request.args.get("action", "").strip() or None
     date_query = request.args.get("date", "").strip() or None
 
-    logs = AdminService.list_audit_logs(user_id=user_id, action=action, date_query=date_query)
+    size, offset = _page()
+    logs = AdminService.list_audit_logs(user_id=user_id, action=action, date_query=date_query, limit=size, offset=offset)
     return render_template(
         "admin/audit_logs.html",
         logs=logs,
@@ -287,5 +303,6 @@ def api_audit_logs():
     user_id = request.args.get("user_id", type=int)
     action = request.args.get("action", "").strip() or None
     date_query = request.args.get("date", "").strip() or None
-    logs = AdminService.list_audit_logs(user_id=user_id, action=action, date_query=date_query)
+    size, offset = _page()
+    logs = AdminService.list_audit_logs(user_id=user_id, action=action, date_query=date_query, limit=size, offset=offset)
     return jsonify(success=True, logs=logs)

@@ -183,7 +183,8 @@ CREATE TABLE venues (
     CONSTRAINT fk_venues_owner FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_venues_owner (owner_id),
     INDEX idx_venues_status (status),
-    INDEX idx_venues_capacity (capacity)
+    INDEX idx_venues_capacity (capacity),
+    INDEX idx_venues_search (status, location, type, capacity, price_per_hour)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ==============================================================================
@@ -211,7 +212,10 @@ CREATE TABLE events (
     INDEX idx_events_organizer (organizer_id),
     INDEX idx_events_venue (venue_id),
     INDEX idx_events_date (event_date),
-    INDEX idx_events_status (status)
+    INDEX idx_events_status (status),
+    INDEX idx_events_owner_date (owner_id, event_date),
+    INDEX idx_events_organizer_date (organizer_id, event_date),
+    INDEX idx_events_status_date (status, event_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE event_schedule_items (
@@ -282,7 +286,10 @@ CREATE TABLE bookings (
     INDEX idx_bookings_venue_conflict (venue_id, booking_date, start_time, end_time),
     INDEX idx_bookings_vendor_conflict (vendor_id, booking_date, start_time, end_time, status),
     INDEX idx_bookings_event (event_id),
-    INDEX idx_bookings_status (status)
+    INDEX idx_bookings_status (status),
+    INDEX idx_bookings_event_status_date (event_id, status, booking_date),
+    INDEX idx_bookings_vendor_status_date (vendor_id, status, booking_date),
+    INDEX idx_bookings_venue_status_date (venue_id, status, booking_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ==============================================================================
@@ -331,7 +338,9 @@ CREATE TABLE payments (
     CONSTRAINT fk_payments_parent FOREIGN KEY (parent_payment_id) REFERENCES payments(id) ON DELETE SET NULL,
     CONSTRAINT fk_payments_initiated_by FOREIGN KEY (initiated_by) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_payments_booking (booking_id),
-    INDEX idx_payments_status (status)
+    INDEX idx_payments_status (status),
+    INDEX idx_payments_booking_status_kind (booking_id, status, record_type),
+    UNIQUE KEY uq_payments_gateway_order (gateway_order_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE invoices (
@@ -351,7 +360,8 @@ CREATE TABLE invoices (
     CONSTRAINT fk_invoices_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
     CONSTRAINT fk_invoices_client FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_invoices_vendor FOREIGN KEY (vendor_id) REFERENCES users(id) ON DELETE SET NULL,
-    INDEX idx_invoices_booking (booking_id)
+    UNIQUE KEY uq_invoices_booking (booking_id),
+    INDEX idx_invoices_client (client_id, issued_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ==============================================================================
@@ -372,7 +382,9 @@ CREATE TABLE attendees (
     CONSTRAINT fk_attendees_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
     UNIQUE KEY uq_event_attendee_email (event_id, email),
     INDEX idx_attendees_event (event_id),
-    INDEX idx_attendees_rsvp (event_id, rsvp_status)
+    INDEX idx_attendees_rsvp (event_id, rsvp_status),
+    INDEX idx_attendees_email (email),
+    INDEX idx_attendees_event_checkin (event_id, checked_in_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE event_reminders (
@@ -429,7 +441,8 @@ CREATE TABLE delivery_tasks (
     CONSTRAINT fk_delivery_partner FOREIGN KEY (partner_id) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_delivery_event (event_id),
     INDEX idx_delivery_partner (partner_id),
-    INDEX idx_delivery_status (status)
+    INDEX idx_delivery_status (status),
+    INDEX idx_delivery_partner_status_time (partner_id, status, scheduled_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE delivery_task_updates (

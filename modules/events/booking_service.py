@@ -1,7 +1,7 @@
 """Venue booking lifecycle operations; callers provide their transaction cursor."""
 from datetime import datetime, time
 from decimal import Decimal
-from modules.finance.services import confirmed_booking_changed, refund_booking_in_cursor, refresh_budget_alerts
+from modules.bookings.lifecycle_service import confirmed_booking_changed, refund_booking_in_cursor, refresh_budget_alerts
 from core.notification_service import notify_in_transaction
 
 

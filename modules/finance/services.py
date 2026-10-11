@@ -260,7 +260,7 @@ def refund_booking_in_cursor(cur,booking_id,actor_id):
         refund_id=result["id"]
         refund_status="success" if result.get("status") in ("processed","success") else "pending"
         if refund_status=="success": cur.execute("UPDATE payments SET status='refunded' WHERE id=%s",(payment["id"],))
-        cur.execute("INSERT INTO payments(booking_id,amount,method,status,transaction_id,gateway_order_id,record_type,parent_payment_id,paid_at) VALUES(%s,%s,%s,%s,%s,%s,'refund',%s,NOW())",(booking_id,payment["amount"],payment["method"],refund_status,refund_id,payment.get("gateway_order_id"),payment["id"]))
+        cur.execute("INSERT INTO payments(booking_id,amount,method,status,transaction_id,gateway_order_id,record_type,parent_payment_id,paid_at) VALUES(%s,%s,%s,%s,%s,NULL,'refund',%s,NOW())",(booking_id,payment["amount"],payment["method"],refund_status,refund_id,payment["id"]))
         refund_record=cur.lastrowid
         _audit(cur,actor_id,"PAYMENT_REFUNDED" if refund_status=="success" else "PAYMENT_REFUND_PENDING","payments",refund_record)
     _refresh_payment_status(cur,booking_id,actor_id)

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ERA — Event Resource & Administration System</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-</head>
+<script src="{{ url_for('static', filename='js/csrf.js') }}" defer></script></head>
 <body>
 
   <!-- ==================== LANDING / HOME PAGE VIEW ==================== -->
@@ -155,7 +155,7 @@
           <p>Register as a stakeholder to access your personal dashboard</p>
         </div>
 
-        <form onsubmit="handleRegistrationSubmit(event)">
+        <form onsubmit="handleRegistrationSubmit(event)"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <div class="form-group">
             <label class="form-label">Username / Full Name *</label>
             <input type="text" id="regName" class="form-control" placeholder="e.g. Alex Johnson" required>
@@ -211,7 +211,7 @@
           <p>Enter your credentials to access your ERA personal dashboard</p>
         </div>
 
-        <form onsubmit="handleLoginSubmit(event)">
+        <form onsubmit="handleLoginSubmit(event)"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <div class="form-group">
             <label class="form-label">Username / Email / Mobile Number *</label>
             <input type="text" id="loginIdentifier" class="form-control" placeholder="Enter username, email or phone" required>
